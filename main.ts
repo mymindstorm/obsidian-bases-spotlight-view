@@ -133,6 +133,7 @@ class SpotlightView extends BasesView {
                 
                 if (imageExtensions.includes(ext)) {
                     centerContentEl.empty();
+                    centerContentEl.addClass('spotlight-center-media-container');
                     const resourcePath = this.app.vault.getResourcePath(file);
                     centerContentEl.createEl('img', { attr: { src: resourcePath }, cls: 'spotlight-media' });
                 } else if (ext === 'pdf') {
