@@ -148,3 +148,20 @@
     color: var(--text-muted);
     font-size: 1.2em;
 }
+
+.spotlight-property-value-container {
+    cursor: text;
+}
+
+.spotlight-property-edit-input {
+    width: 100%;
+    min-height: 50px;
+    font-family: inherit;
+    font-size: inherit;
+    background: var(--background-modifier-form-field);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border-hover);
+    border-radius: 4px;
+    padding: 4px;
+    resize: vertical;
+}

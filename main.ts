@@ -164,13 +164,67 @@ class SpotlightView extends BasesView {
         const properties = this.data.properties || [];
         for (const prop of properties) {
             const val = entry.getValue(prop);
-            const valStr = this.formatValue(val);
             
             const propEl = this.sidebarEl.createDiv('spotlight-property');
             propEl.createDiv({ text: this.getPropName(prop), cls: 'spotlight-property-name' });
-            const valEl = propEl.createDiv({ text: valStr, cls: 'spotlight-property-value' });
-            // Allow long text to scroll within the value box
-            valEl.addClass('spotlight-scrollable-text');
+            
+            const valContainerEl = propEl.createDiv({ cls: 'spotlight-property-value-container' });
+            const valEl = valContainerEl.createDiv({ cls: 'spotlight-property-value spotlight-scrollable-text' });
+            
+            if (val && typeof (val as any).renderTo === 'function') {
+                (val as any).renderTo(valEl, this.app.renderContext);
+            } else {
+                valEl.setText(this.formatValue(val));
+            }
+
+            // Editable logic
+            if (prop.startsWith('note.') && entry.file instanceof TFile) {
+                valContainerEl.title = "Double click to edit";
+                valContainerEl.addEventListener('dblclick', () => {
+                    const propName = prop.substring(5);
+                    const cache = this.app.metadataCache.getFileCache(entry.file as TFile);
+                    const rawValue = cache?.frontmatter?.[propName];
+                    
+                    const editValue = rawValue !== undefined ? (typeof rawValue === 'object' ? JSON.stringify(rawValue) : String(rawValue)) : '';
+                    
+                    valContainerEl.empty();
+                    const inputEl = valContainerEl.createEl('textarea', { cls: 'spotlight-property-edit-input' });
+                    inputEl.value = editValue;
+                    inputEl.focus();
+
+                    const save = async () => {
+                        const newValStr = inputEl.value;
+                        let parsedVal: any = newValStr;
+                        try {
+                            // Try to parse JSON (e.g. arrays like ["tag1", "tag2"])
+                            if (newValStr.startsWith('[') || newValStr.startsWith('{')) {
+                                parsedVal = JSON.parse(newValStr);
+                            } else if (newValStr === 'true') parsedVal = true;
+                            else if (newValStr === 'false') parsedVal = false;
+                            else if (!isNaN(Number(newValStr)) && newValStr !== '') parsedVal = Number(newValStr);
+                        } catch (e) {
+                            // Keep as string
+                        }
+
+                        await this.app.fileManager.processFrontMatter(entry.file as TFile, (fm) => {
+                            if (newValStr === '') {
+                                delete fm[propName];
+                            } else {
+                                fm[propName] = parsedVal;
+                            }
+                        });
+                        // Base will naturally fire onDataUpdated when frontmatter changes!
+                    };
+
+                    inputEl.addEventListener('blur', save);
+                    inputEl.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            inputEl.blur(); // Triggers save
+                        }
+                    });
+                });
+            }
         }
 
         const countEl = this.sidebarEl.createDiv('spotlight-count');
