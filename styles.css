@@ -1,24 +1,42 @@
 /* 
- * Fix the white bar: Obsidian's .view-content has default padding.
- * BasesView containerEl is a child inside .view-content, so we target
- * the ancestor .view-content that contains our view using :has().
- * We also target the Bases scroll container which wraps our containerEl.
+ * Fix the white bar: Obsidian's Bases view has multiple wrapper layers:
+ * .view-content > [bases scroll wrapper] > [bases toolbar + containerEl]
+ * We need to force the entire chain to fill available height.
+ * Using :has() to scope these overrides only to views containing our spotlight.
  */
+
+/* Layer 1: Obsidian's .view-content — remove default padding */
 .view-content:has(.spotlight-bases-view) {
     padding: 0 !important;
     overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 
-/* The Bases scroll container that wraps our containerEl */
+/* Layer 2: ALL intermediate wrappers between .view-content and our view — fill height */
 .view-content:has(.spotlight-bases-view) > * {
-    height: 100% !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
     overflow: hidden !important;
 }
 
+/* Layer 3: Any further nested wrappers */
+.view-content:has(.spotlight-bases-view) > * > * {
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+/* Our root container — fill remaining space */
 .spotlight-bases-view {
-    display: flex;
-    flex-direction: row;
-    height: 100%;
+    display: flex !important;
+    flex-direction: row !important;
+    flex: 1 !important;
+    min-height: 0 !important;
     width: 100%;
     overflow: hidden;
     outline: none;
