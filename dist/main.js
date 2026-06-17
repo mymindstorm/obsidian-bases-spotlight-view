@@ -114,8 +114,16 @@ var SpotlightView = class extends import_obsidian.BasesView {
       const valueStr = this.formatValue(propValue);
       centerContentEl.createEl("div", { text: valueStr, cls: "spotlight-attribute-content" });
     } else {
-      const file = entry.file;
+      let file = entry.file;
       if (file instanceof import_obsidian.TFile) {
+        const sidecarMatch = file.name.match(/^(.*\.(png|jpg|jpeg|gif|bmp|svg|webp|pdf))\.md$/i);
+        if (sidecarMatch) {
+          const originalPath = file.path.slice(0, -3);
+          const originalFile = this.app.vault.getAbstractFileByPath(originalPath);
+          if (originalFile instanceof import_obsidian.TFile) {
+            file = originalFile;
+          }
+        }
         const renderIndex = this.currentIndex;
         const ext = file.extension.toLowerCase();
         const imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"];
@@ -153,8 +161,23 @@ var SpotlightView = class extends import_obsidian.BasesView {
     const sidebarTitle = this.sidebarEl.createEl("h3", { text: "Attributes" });
     sidebarTitle.addClass("spotlight-sidebar-title");
     const properties = this.data.properties || [];
+    let targetFile = entry.file;
+    let isBinary = targetFile.extension !== "md";
+    let sidecarFile = null;
+    if (isBinary) {
+      const sidecarPath = targetFile.path + ".md";
+      const sc = this.app.vault.getAbstractFileByPath(sidecarPath);
+      if (sc instanceof import_obsidian.TFile) sidecarFile = sc;
+    }
     for (const prop of properties) {
-      const val = entry.getValue(prop);
+      let val = entry.getValue(prop);
+      if (!val && sidecarFile && prop.startsWith("note.")) {
+        const propName = prop.substring(5);
+        const cache = this.app.metadataCache.getFileCache(sidecarFile);
+        if ((cache == null ? void 0 : cache.frontmatter) && cache.frontmatter[propName] !== void 0) {
+          val = cache.frontmatter[propName];
+        }
+      }
       const propEl = this.sidebarEl.createDiv("spotlight-property");
       propEl.createDiv({ text: this.getPropName(prop), cls: "spotlight-property-name" });
       const valContainerEl = propEl.createDiv({ cls: "spotlight-property-value-container" });
@@ -175,17 +198,26 @@ var SpotlightView = class extends import_obsidian.BasesView {
       if (prop.startsWith("note.") && entry.file instanceof import_obsidian.TFile) {
         propEl.title = "Click to edit";
         propEl.style.cursor = "pointer";
-        propEl.addEventListener("click", (e) => {
+        propEl.addEventListener("click", async (e) => {
           var _a, _b, _c;
           if (valContainerEl.querySelector(".spotlight-property-edit-input")) return;
           const propName = prop.substring(5);
-          const cache = this.app.metadataCache.getFileCache(entry.file);
+          let fileToEdit = entry.file;
+          if (fileToEdit.extension !== "md") {
+            const sidecarPath = fileToEdit.path + ".md";
+            let sidecar = this.app.vault.getAbstractFileByPath(sidecarPath);
+            if (!sidecar) {
+              sidecar = await this.app.vault.create(sidecarPath, "");
+            }
+            fileToEdit = sidecar;
+          }
+          const cache = this.app.metadataCache.getFileCache(fileToEdit);
           const rawValue = (_a = cache == null ? void 0 : cache.frontmatter) == null ? void 0 : _a[propName];
           const typeManager = this.app.metadataTypeManager;
           const propType = (_c = (_b = typeManager == null ? void 0 : typeManager.getPropertyInfo) == null ? void 0 : _b.call(typeManager, propName)) == null ? void 0 : _c.type;
           const isCheckbox = propType === "checkbox" || typeof rawValue === "boolean";
           if (isCheckbox) {
-            this.app.fileManager.processFrontMatter(entry.file, (fm) => {
+            this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
               fm[propName] = !rawValue;
             });
             return;
@@ -206,13 +238,16 @@ var SpotlightView = class extends import_obsidian.BasesView {
               else if (!isNaN(Number(newValStr)) && newValStr !== "") parsedVal = Number(newValStr);
             } catch (err) {
             }
-            await this.app.fileManager.processFrontMatter(entry.file, (fm) => {
+            await this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
               if (newValStr === "") {
                 delete fm[propName];
               } else {
                 fm[propName] = parsedVal;
               }
             });
+            if (fileToEdit !== entry.file) {
+              setTimeout(() => this.render(), 100);
+            }
           };
           inputEl.addEventListener("blur", save);
           inputEl.addEventListener("keydown", (e2) => {

@@ -126,8 +126,18 @@ class SpotlightView extends BasesView {
             centerContentEl.createEl('div', { text: valueStr, cls: 'spotlight-attribute-content' });
         } else {
             // Display page content
-            const file = entry.file;
+            let file = entry.file;
             if (file instanceof TFile) {
+                // If it's a sidecar (e.g. image.png.md), display the original file instead
+                const sidecarMatch = file.name.match(/^(.*\.(png|jpg|jpeg|gif|bmp|svg|webp|pdf))\.md$/i);
+                if (sidecarMatch) {
+                    const originalPath = file.path.slice(0, -3);
+                    const originalFile = this.app.vault.getAbstractFileByPath(originalPath);
+                    if (originalFile instanceof TFile) {
+                        file = originalFile;
+                    }
+                }
+
                 const renderIndex = this.currentIndex;
                 const ext = file.extension.toLowerCase();
                 const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp'];
@@ -170,8 +180,29 @@ class SpotlightView extends BasesView {
         sidebarTitle.addClass('spotlight-sidebar-title');
 
         const properties = this.data.properties || [];
+
+        // Resolve target file and sidecar once
+        let targetFile = entry.file as TFile;
+        let isBinary = targetFile.extension !== 'md';
+        let sidecarFile: TFile | null = null;
+        
+        if (isBinary) {
+            const sidecarPath = targetFile.path + '.md';
+            const sc = this.app.vault.getAbstractFileByPath(sidecarPath);
+            if (sc instanceof TFile) sidecarFile = sc;
+        }
+
         for (const prop of properties) {
-            const val = entry.getValue(prop);
+            let val = entry.getValue(prop);
+
+            // Try fallback to sidecar if val is empty
+            if (!val && sidecarFile && prop.startsWith('note.')) {
+                const propName = prop.substring(5);
+                const cache = this.app.metadataCache.getFileCache(sidecarFile);
+                if (cache?.frontmatter && cache.frontmatter[propName] !== undefined) {
+                    val = cache.frontmatter[propName] as any;
+                }
+            }
             
             const propEl = this.sidebarEl.createDiv('spotlight-property');
             propEl.createDiv({ text: this.getPropName(prop), cls: 'spotlight-property-name' });
@@ -199,12 +230,24 @@ class SpotlightView extends BasesView {
             if (prop.startsWith('note.') && entry.file instanceof TFile) {
                 propEl.title = "Click to edit";
                 propEl.style.cursor = "pointer";
-                propEl.addEventListener('click', (e) => {
+                propEl.addEventListener('click', async (e) => {
                     // Prevent multiple inputs if already editing
                     if (valContainerEl.querySelector('.spotlight-property-edit-input')) return;
                     
                     const propName = prop.substring(5);
-                    const cache = this.app.metadataCache.getFileCache(entry.file as TFile);
+                    
+                    // Determine which file to edit
+                    let fileToEdit = entry.file as TFile;
+                    if (fileToEdit.extension !== 'md') {
+                        const sidecarPath = fileToEdit.path + '.md';
+                        let sidecar = this.app.vault.getAbstractFileByPath(sidecarPath);
+                        if (!sidecar) {
+                            sidecar = await this.app.vault.create(sidecarPath, '');
+                        }
+                        fileToEdit = sidecar as TFile;
+                    }
+
+                    const cache = this.app.metadataCache.getFileCache(fileToEdit);
                     const rawValue = cache?.frontmatter?.[propName];
                     
                     // Use Obsidian's internal type manager if available to detect checkbox properties
@@ -213,7 +256,7 @@ class SpotlightView extends BasesView {
                     const isCheckbox = propType === 'checkbox' || typeof rawValue === 'boolean';
 
                     if (isCheckbox) {
-                        this.app.fileManager.processFrontMatter(entry.file as TFile, (fm) => {
+                        this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
                             fm[propName] = !rawValue;
                         });
                         return; // Handled directly, no need for textbox
@@ -240,13 +283,18 @@ class SpotlightView extends BasesView {
                             // Keep as string
                         }
 
-                        await this.app.fileManager.processFrontMatter(entry.file as TFile, (fm) => {
+                        await this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
                             if (newValStr === '') {
                                 delete fm[propName];
                             } else {
                                 fm[propName] = parsedVal;
                             }
                         });
+                        
+                        // Force rerender if we created/edited a sidecar manually, as Bases might not react to it if the base query is for the binary file
+                        if (fileToEdit !== entry.file) {
+                            setTimeout(() => this.render(), 100);
+                        }
                     };
 
                     inputEl.addEventListener('blur', save);
