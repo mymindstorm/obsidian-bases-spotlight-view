@@ -1,0 +1,133 @@
+.spotlight-bases-view {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    outline: none;
+}
+
+.spotlight-sidebar-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 100;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: var(--background-modifier-border);
+    color: var(--text-normal);
+    border: none;
+    cursor: pointer;
+}
+
+.spotlight-sidebar-toggle:hover {
+    background-color: var(--background-modifier-border-hover);
+}
+
+.spotlight-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    overflow-y: auto;
+    background-color: var(--background-primary);
+}
+
+.spotlight-center-content {
+    flex: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.spotlight-attribute-content {
+    font-size: 2em;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 20vh;
+    color: var(--text-accent);
+}
+
+.spotlight-resizer {
+    width: 4px;
+    background-color: var(--background-modifier-border);
+    cursor: col-resize;
+    transition: background-color 0.2s ease;
+}
+
+.spotlight-resizer:hover, .spotlight-resizer:active {
+    background-color: var(--text-accent);
+}
+
+.spotlight-sidebar {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--background-secondary);
+    border-left: 1px solid var(--background-modifier-border);
+    padding: 1rem;
+    overflow-y: auto;
+    position: relative;
+}
+
+.spotlight-sidebar-title {
+    margin-top: 30px; /* Leave space for toggle button */
+    margin-bottom: 20px;
+    color: var(--text-muted);
+    font-size: 1.2em;
+}
+
+.spotlight-property {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 0.5rem;
+}
+
+.spotlight-property-name {
+    font-weight: bold;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+    font-size: 0.9em;
+    text-transform: uppercase;
+}
+
+.spotlight-property-value {
+    color: var(--text-normal);
+}
+
+.spotlight-scrollable-text {
+    max-height: 150px;
+    overflow-y: auto;
+    word-break: break-word;
+    white-space: pre-wrap;
+    padding-right: 5px;
+}
+
+/* Custom scrollbar for property values */
+.spotlight-scrollable-text::-webkit-scrollbar {
+    width: 4px;
+}
+
+.spotlight-scrollable-text::-webkit-scrollbar-thumb {
+    background-color: var(--background-modifier-border);
+    border-radius: 4px;
+}
+
+.spotlight-count {
+    margin-top: auto;
+    padding-top: 1rem;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 0.85em;
+}
+
+.spotlight-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 1.2em;
+}

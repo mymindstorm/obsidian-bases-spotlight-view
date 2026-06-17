@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-bases-spotlight",
+	"name": "Bases Spotlight",
+	"version": "1.0.0",
+	"minAppVersion": "1.10.0",
+	"description": "A spotlight view for Obsidian Bases. Focuses on content with an attributes sidebar.",
+	"author": "Antigravity",
+	"authorUrl": "",
+	"isDesktopOnly": false
+}
