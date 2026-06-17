@@ -159,14 +159,23 @@ var SpotlightView = class extends import_obsidian.BasesView {
       propEl.createDiv({ text: this.getPropName(prop), cls: "spotlight-property-name" });
       const valContainerEl = propEl.createDiv({ cls: "spotlight-property-value-container" });
       const valEl = valContainerEl.createDiv({ cls: "spotlight-property-value spotlight-scrollable-text" });
+      let isEmpty = false;
       if (val && typeof val.renderTo === "function") {
         val.renderTo(valEl, this.app.renderContext);
+        if (valEl.innerHTML === "") isEmpty = true;
       } else {
-        valEl.setText(this.formatValue(val));
+        const formatted = this.formatValue(val);
+        if (formatted === "") isEmpty = true;
+        else valEl.setText(formatted);
+      }
+      if (isEmpty) {
+        valEl.setText("\u2014");
+        valEl.style.color = "var(--text-faint)";
       }
       if (prop.startsWith("note.") && entry.file instanceof import_obsidian.TFile) {
-        valContainerEl.title = "Click to edit";
-        valContainerEl.addEventListener("click", (e) => {
+        propEl.title = "Click to edit";
+        propEl.style.cursor = "pointer";
+        propEl.addEventListener("click", (e) => {
           var _a, _b, _c;
           if (valContainerEl.querySelector(".spotlight-property-edit-input")) return;
           const propName = prop.substring(5);

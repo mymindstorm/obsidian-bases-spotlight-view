@@ -179,16 +179,27 @@ class SpotlightView extends BasesView {
             const valContainerEl = propEl.createDiv({ cls: 'spotlight-property-value-container' });
             const valEl = valContainerEl.createDiv({ cls: 'spotlight-property-value spotlight-scrollable-text' });
             
+            let isEmpty = false;
             if (val && typeof (val as any).renderTo === 'function') {
                 (val as any).renderTo(valEl, this.app.renderContext);
+                // Simple heuristic for empty rendered value
+                if (valEl.innerHTML === '') isEmpty = true;
             } else {
-                valEl.setText(this.formatValue(val));
+                const formatted = this.formatValue(val);
+                if (formatted === '') isEmpty = true;
+                else valEl.setText(formatted);
+            }
+
+            if (isEmpty) {
+                valEl.setText('—');
+                valEl.style.color = 'var(--text-faint)';
             }
 
             // Editable logic
             if (prop.startsWith('note.') && entry.file instanceof TFile) {
-                valContainerEl.title = "Click to edit";
-                valContainerEl.addEventListener('click', (e) => {
+                propEl.title = "Click to edit";
+                propEl.style.cursor = "pointer";
+                propEl.addEventListener('click', (e) => {
                     // Prevent multiple inputs if already editing
                     if (valContainerEl.querySelector('.spotlight-property-edit-input')) return;
                     
