@@ -125,8 +125,8 @@ var SpotlightView = class extends import_obsidian.BasesView {
           centerContentEl.createEl("img", { attr: { src: resourcePath }, cls: "spotlight-media" });
         } else if (ext === "pdf") {
           centerContentEl.empty();
-          const resourcePath = this.app.vault.getResourcePath(file);
-          centerContentEl.createEl("iframe", { attr: { src: resourcePath, width: "100%", height: "100%" }, cls: "spotlight-media-pdf" });
+          centerContentEl.addClass("spotlight-center-pdf-container", "markdown-rendered");
+          import_obsidian.MarkdownRenderer.render(this.app, `![[${file.path}]]`, centerContentEl, file.path, this);
         } else {
           this.app.vault.cachedRead(file).then((content) => {
             if (this.currentIndex !== renderIndex) return;
