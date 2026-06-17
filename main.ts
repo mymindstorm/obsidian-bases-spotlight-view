@@ -22,6 +22,12 @@ class SpotlightView extends BasesView {
         super(controller);
         
         this.containerEl = containerEl;
+        
+        // Remove padding from Obsidian's parent view-content container to fix white bar at the bottom
+        if (this.containerEl.parentElement) {
+            this.containerEl.parentElement.style.padding = '0';
+        }
+
         // Setup base DOM
         this.containerEl.addClass('spotlight-bases-view');
         this.containerEl.tabIndex = 0; // Make focusable for keyboard events
