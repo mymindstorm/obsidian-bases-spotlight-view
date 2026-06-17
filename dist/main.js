@@ -109,6 +109,7 @@ var SpotlightView = class extends import_obsidian.BasesView {
     const spotlightProperty = this.config.get("spotlight_property");
     const centerContentEl = this.centerEl.createDiv("spotlight-center-content");
     if (spotlightProperty && spotlightProperty !== "") {
+      this.centerEl.removeClass("spotlight-center-no-padding");
       const propValue = entry.getValue(spotlightProperty);
       const valueStr = this.formatValue(propValue);
       centerContentEl.createEl("div", { text: valueStr, cls: "spotlight-attribute-content" });
@@ -118,6 +119,11 @@ var SpotlightView = class extends import_obsidian.BasesView {
         const renderIndex = this.currentIndex;
         const ext = file.extension.toLowerCase();
         const imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"];
+        if (imageExtensions.includes(ext) || ext === "pdf") {
+          this.centerEl.addClass("spotlight-center-no-padding");
+        } else {
+          this.centerEl.removeClass("spotlight-center-no-padding");
+        }
         if (imageExtensions.includes(ext)) {
           centerContentEl.empty();
           centerContentEl.addClass("spotlight-center-media-container");

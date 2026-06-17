@@ -34,6 +34,10 @@
     background-color: var(--background-primary);
 }
 
+.spotlight-center.spotlight-center-no-padding {
+    padding: 0;
+}
+
 .spotlight-center-content {
     flex: 1;
     max-width: 800px;

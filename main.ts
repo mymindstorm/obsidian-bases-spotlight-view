@@ -119,6 +119,7 @@ class SpotlightView extends BasesView {
         const centerContentEl = this.centerEl.createDiv('spotlight-center-content');
         
         if (spotlightProperty && spotlightProperty !== '') {
+            this.centerEl.removeClass('spotlight-center-no-padding');
             // Display property content
             const propValue = entry.getValue(spotlightProperty as any);
             const valueStr = this.formatValue(propValue);
@@ -131,6 +132,12 @@ class SpotlightView extends BasesView {
                 const ext = file.extension.toLowerCase();
                 const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp'];
                 
+                if (imageExtensions.includes(ext) || ext === 'pdf') {
+                    this.centerEl.addClass('spotlight-center-no-padding');
+                } else {
+                    this.centerEl.removeClass('spotlight-center-no-padding');
+                }
+
                 if (imageExtensions.includes(ext)) {
                     centerContentEl.empty();
                     centerContentEl.addClass('spotlight-center-media-container');
