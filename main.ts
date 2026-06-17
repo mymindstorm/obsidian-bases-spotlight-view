@@ -24,14 +24,18 @@ class SpotlightView extends BasesView {
         this.containerEl = containerEl;
         
         // Remove padding from Obsidian's parent view-content container to fix white bar at the bottom
-        // We use setTimeout to ensure the element is fully mounted in the DOM tree before searching upwards
-        setTimeout(() => {
-            const viewContent = this.containerEl.closest('.view-content') as HTMLElement;
-            if (viewContent) {
-                viewContent.style.padding = '0';
-                viewContent.style.overflow = 'hidden';
+        // We use an interval to wait until the element is actually attached to the document body
+        const checkPadding = setInterval(() => {
+            if (this.containerEl.isConnected) {
+                clearInterval(checkPadding);
+                // The parent element might be .view-content, or containerEl itself might be .view-content
+                const viewContent = this.containerEl.closest('.view-content') as HTMLElement || this.containerEl;
+                if (viewContent) {
+                    viewContent.style.padding = '0';
+                    viewContent.style.overflow = 'hidden';
+                }
             }
-        }, 0);
+        }, 100);
 
         // Setup base DOM
         this.containerEl.addClass('spotlight-bases-view');

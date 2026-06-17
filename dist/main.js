@@ -51,13 +51,16 @@ var SpotlightView = class extends import_obsidian.BasesView {
       document.removeEventListener("mouseup", this.stopResize);
     };
     this.containerEl = containerEl;
-    setTimeout(() => {
-      const viewContent = this.containerEl.closest(".view-content");
-      if (viewContent) {
-        viewContent.style.padding = "0";
-        viewContent.style.overflow = "hidden";
+    const checkPadding = setInterval(() => {
+      if (this.containerEl.isConnected) {
+        clearInterval(checkPadding);
+        const viewContent = this.containerEl.closest(".view-content") || this.containerEl;
+        if (viewContent) {
+          viewContent.style.padding = "0";
+          viewContent.style.overflow = "hidden";
+        }
       }
-    }, 0);
+    }, 100);
     this.containerEl.addClass("spotlight-bases-view");
     this.containerEl.tabIndex = 0;
     this.centerEl = this.containerEl.createDiv("spotlight-center");
