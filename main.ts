@@ -187,12 +187,27 @@ class SpotlightView extends BasesView {
 
             // Editable logic
             if (prop.startsWith('note.') && entry.file instanceof TFile) {
-                valContainerEl.title = "Double click to edit";
-                valContainerEl.addEventListener('dblclick', () => {
+                valContainerEl.title = "Click to edit";
+                valContainerEl.addEventListener('click', (e) => {
+                    // Prevent multiple inputs if already editing
+                    if (valContainerEl.querySelector('.spotlight-property-edit-input')) return;
+                    
                     const propName = prop.substring(5);
                     const cache = this.app.metadataCache.getFileCache(entry.file as TFile);
                     const rawValue = cache?.frontmatter?.[propName];
                     
+                    // Use Obsidian's internal type manager if available to detect checkbox properties
+                    const typeManager = (this.app as any).metadataTypeManager;
+                    const propType = typeManager?.getPropertyInfo?.(propName)?.type;
+                    const isCheckbox = propType === 'checkbox' || typeof rawValue === 'boolean';
+
+                    if (isCheckbox) {
+                        this.app.fileManager.processFrontMatter(entry.file as TFile, (fm) => {
+                            fm[propName] = !rawValue;
+                        });
+                        return; // Handled directly, no need for textbox
+                    }
+
                     const editValue = rawValue !== undefined ? (typeof rawValue === 'object' ? JSON.stringify(rawValue) : String(rawValue)) : '';
                     
                     valContainerEl.empty();
@@ -210,7 +225,7 @@ class SpotlightView extends BasesView {
                             } else if (newValStr === 'true') parsedVal = true;
                             else if (newValStr === 'false') parsedVal = false;
                             else if (!isNaN(Number(newValStr)) && newValStr !== '') parsedVal = Number(newValStr);
-                        } catch (e) {
+                        } catch (err) {
                             // Keep as string
                         }
 
@@ -221,14 +236,17 @@ class SpotlightView extends BasesView {
                                 fm[propName] = parsedVal;
                             }
                         });
-                        // Base will naturally fire onDataUpdated when frontmatter changes!
                     };
 
                     inputEl.addEventListener('blur', save);
-                    inputEl.addEventListener('keydown', (e) => {
+                    inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
                             inputEl.blur(); // Triggers save
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            // Cancel edit: just rerender
+                            this.render();
                         }
                     });
                 });

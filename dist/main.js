@@ -165,12 +165,22 @@ var SpotlightView = class extends import_obsidian.BasesView {
         valEl.setText(this.formatValue(val));
       }
       if (prop.startsWith("note.") && entry.file instanceof import_obsidian.TFile) {
-        valContainerEl.title = "Double click to edit";
-        valContainerEl.addEventListener("dblclick", () => {
-          var _a;
+        valContainerEl.title = "Click to edit";
+        valContainerEl.addEventListener("click", (e) => {
+          var _a, _b, _c;
+          if (valContainerEl.querySelector(".spotlight-property-edit-input")) return;
           const propName = prop.substring(5);
           const cache = this.app.metadataCache.getFileCache(entry.file);
           const rawValue = (_a = cache == null ? void 0 : cache.frontmatter) == null ? void 0 : _a[propName];
+          const typeManager = this.app.metadataTypeManager;
+          const propType = (_c = (_b = typeManager == null ? void 0 : typeManager.getPropertyInfo) == null ? void 0 : _b.call(typeManager, propName)) == null ? void 0 : _c.type;
+          const isCheckbox = propType === "checkbox" || typeof rawValue === "boolean";
+          if (isCheckbox) {
+            this.app.fileManager.processFrontMatter(entry.file, (fm) => {
+              fm[propName] = !rawValue;
+            });
+            return;
+          }
           const editValue = rawValue !== void 0 ? typeof rawValue === "object" ? JSON.stringify(rawValue) : String(rawValue) : "";
           valContainerEl.empty();
           const inputEl = valContainerEl.createEl("textarea", { cls: "spotlight-property-edit-input" });
@@ -185,7 +195,7 @@ var SpotlightView = class extends import_obsidian.BasesView {
               } else if (newValStr === "true") parsedVal = true;
               else if (newValStr === "false") parsedVal = false;
               else if (!isNaN(Number(newValStr)) && newValStr !== "") parsedVal = Number(newValStr);
-            } catch (e) {
+            } catch (err) {
             }
             await this.app.fileManager.processFrontMatter(entry.file, (fm) => {
               if (newValStr === "") {
@@ -196,10 +206,13 @@ var SpotlightView = class extends import_obsidian.BasesView {
             });
           };
           inputEl.addEventListener("blur", save);
-          inputEl.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
+          inputEl.addEventListener("keydown", (e2) => {
+            if (e2.key === "Enter" && !e2.shiftKey) {
+              e2.preventDefault();
               inputEl.blur();
+            } else if (e2.key === "Escape") {
+              e2.preventDefault();
+              this.render();
             }
           });
         });
