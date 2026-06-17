@@ -16,10 +16,12 @@ class SpotlightView extends BasesView {
     private centerEl: HTMLElement;
     private sidebarEl: HTMLElement;
     private isResizing = false;
+    private containerEl: HTMLElement;
 
-    constructor(controller: QueryController) {
+    constructor(controller: QueryController, containerEl: HTMLElement) {
         super(controller);
         
+        this.containerEl = containerEl;
         // Setup base DOM
         this.containerEl.addClass('spotlight-bases-view');
         this.containerEl.tabIndex = 0; // Make focusable for keyboard events
@@ -184,7 +186,7 @@ export default class BasesSpotlightPlugin extends Plugin {
         this.registerBasesView('bases-spotlight-view', {
             name: "Spotlight View",
             factory: (controller: QueryController, containerEl: HTMLElement) => {
-                const view = new SpotlightView(controller);
+                const view = new SpotlightView(controller, containerEl);
                 return view;
             },
             options: (config) => [

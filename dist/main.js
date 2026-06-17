@@ -29,7 +29,7 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
 var SpotlightView = class extends import_obsidian.BasesView {
-  constructor(controller) {
+  constructor(controller, containerEl) {
     super(controller);
     this.type = "bases-spotlight-view";
     this.currentIndex = 0;
@@ -50,6 +50,7 @@ var SpotlightView = class extends import_obsidian.BasesView {
       document.removeEventListener("mousemove", this.doResize);
       document.removeEventListener("mouseup", this.stopResize);
     };
+    this.containerEl = containerEl;
     this.containerEl.addClass("spotlight-bases-view");
     this.containerEl.tabIndex = 0;
     this.centerEl = this.containerEl.createDiv("spotlight-center");
@@ -162,7 +163,7 @@ var BasesSpotlightPlugin = class extends import_obsidian.Plugin {
     this.registerBasesView("bases-spotlight-view", {
       name: "Spotlight View",
       factory: (controller, containerEl) => {
-        const view = new SpotlightView(controller);
+        const view = new SpotlightView(controller, containerEl);
         return view;
       },
       options: (config) => [
