@@ -1,38 +1,23 @@
 /* 
- * Fix the white bar: Obsidian's Bases view has multiple wrapper layers:
- * .view-content > [bases scroll wrapper] > [bases toolbar + containerEl]
- * We need to force the entire chain to fill available height.
- * Using :has() to scope these overrides only to views containing our spotlight.
+ * DOM structure (from devtools):
+ * .view-content (flex)
+ *   ├── .bases-header        ← toolbar ("Table ▿ 7 results ... Sort Filter")
+ *   ├── .bases-search-row    ← hidden
+ *   ├── .bases-error         ← hidden
+ *   └── .bases-view.spotlight-bases-view  ← OUR VIEW — needs flex:1
+ *
+ * .view-content is already display:flex from Obsidian.
+ * The fix: make our .bases-view fill remaining space with flex:1,
+ * and remove any padding on .view-content.
  */
 
-/* Layer 1: Obsidian's .view-content — remove default padding */
+/* Remove default padding from .view-content when our spotlight is present */
 .view-content:has(.spotlight-bases-view) {
     padding: 0 !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
 }
 
-/* Layer 2: ALL intermediate wrappers between .view-content and our view — fill height */
-.view-content:has(.spotlight-bases-view) > * {
-    flex: 1 !important;
-    min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-}
-
-/* Layer 3: Any further nested wrappers */
-.view-content:has(.spotlight-bases-view) > * > * {
-    flex: 1 !important;
-    min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-}
-
-/* Our root container — fill remaining space */
-.spotlight-bases-view {
+/* Make our view fill all remaining space after the Bases toolbar */
+.bases-view.spotlight-bases-view {
     display: flex !important;
     flex-direction: row !important;
     flex: 1 !important;
