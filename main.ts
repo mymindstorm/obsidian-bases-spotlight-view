@@ -23,20 +23,6 @@ class SpotlightView extends BasesView {
         
         this.containerEl = containerEl;
         
-        // Remove padding from Obsidian's parent view-content container to fix white bar at the bottom
-        // We use an interval to wait until the element is actually attached to the document body
-        const checkPadding = setInterval(() => {
-            if (this.containerEl.isConnected) {
-                clearInterval(checkPadding);
-                // The parent element might be .view-content, or containerEl itself might be .view-content
-                const viewContent = this.containerEl.closest('.view-content') as HTMLElement || this.containerEl;
-                if (viewContent) {
-                    viewContent.style.padding = '0';
-                    viewContent.style.overflow = 'hidden';
-                }
-            }
-        }, 100);
-
         // Setup base DOM
         this.containerEl.addClass('spotlight-bases-view');
         this.containerEl.tabIndex = 0; // Make focusable for keyboard events
@@ -170,8 +156,15 @@ class SpotlightView extends BasesView {
                     centerContentEl.createEl('img', { attr: { src: resourcePath }, cls: 'spotlight-media' });
                 } else if (ext === 'pdf') {
                     centerContentEl.empty();
-                    centerContentEl.addClass('spotlight-center-pdf-container', 'markdown-rendered');
-                    MarkdownRenderer.render(this.app, `![[${file.path}]]`, centerContentEl, file.path, this);
+                    centerContentEl.addClass('spotlight-center-pdf-container');
+                    const resourcePath = this.app.vault.getResourcePath(file);
+                    const iframe = centerContentEl.createEl('iframe', {
+                        cls: 'spotlight-pdf-iframe',
+                        attr: {
+                            src: resourcePath,
+                            type: 'application/pdf',
+                        }
+                    });
                 } else {
                     this.app.vault.cachedRead(file).then(content => {
                         if (this.currentIndex !== renderIndex) return;

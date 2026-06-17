@@ -1,14 +1,26 @@
+/* 
+ * Fix the white bar: Obsidian's .view-content has default padding.
+ * BasesView containerEl is a child inside .view-content, so we target
+ * the ancestor .view-content that contains our view using :has().
+ * We also target the Bases scroll container which wraps our containerEl.
+ */
+.view-content:has(.spotlight-bases-view) {
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+/* The Bases scroll container that wraps our containerEl */
+.view-content:has(.spotlight-bases-view) > * {
+    height: 100% !important;
+    overflow: hidden !important;
+}
+
 .spotlight-bases-view {
     display: flex;
     flex-direction: row;
-    height: 100% !important;
-    width: 100% !important;
+    height: 100%;
+    width: 100%;
     overflow: hidden;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
     outline: none;
     background-color: var(--background-primary);
 }
@@ -36,6 +48,7 @@
     flex-direction: column;
     padding: 2rem;
     overflow-y: auto;
+    min-width: 0;
     background-color: var(--background-primary);
 }
 
@@ -49,6 +62,7 @@
     max-width: 800px;
     margin: 0 auto;
     width: 100%;
+    min-height: 0;
 }
 
 .spotlight-center-media-container {
@@ -67,27 +81,17 @@
     object-fit: contain;
 }
 
+/* PDF: simple iframe that fills the center pane */
 .spotlight-center-pdf-container {
-    flex: 1;
-    width: 100%;
+    height: 100%;
     max-width: none;
     margin: 0;
-    position: relative;
 }
 
-.spotlight-center-pdf-container p {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    margin: 0;
-    padding: 0;
-}
-
-.spotlight-center-pdf-container .internal-embed {
-    width: 100% !important;
-    height: 100% !important;
+.spotlight-pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 
 .spotlight-attribute-content {

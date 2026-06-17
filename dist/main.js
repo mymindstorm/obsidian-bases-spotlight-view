@@ -51,16 +51,6 @@ var SpotlightView = class extends import_obsidian.BasesView {
       document.removeEventListener("mouseup", this.stopResize);
     };
     this.containerEl = containerEl;
-    const checkPadding = setInterval(() => {
-      if (this.containerEl.isConnected) {
-        clearInterval(checkPadding);
-        const viewContent = this.containerEl.closest(".view-content") || this.containerEl;
-        if (viewContent) {
-          viewContent.style.padding = "0";
-          viewContent.style.overflow = "hidden";
-        }
-      }
-    }, 100);
     this.containerEl.addClass("spotlight-bases-view");
     this.containerEl.tabIndex = 0;
     this.centerEl = this.containerEl.createDiv("spotlight-center");
@@ -149,8 +139,15 @@ var SpotlightView = class extends import_obsidian.BasesView {
           centerContentEl.createEl("img", { attr: { src: resourcePath }, cls: "spotlight-media" });
         } else if (ext === "pdf") {
           centerContentEl.empty();
-          centerContentEl.addClass("spotlight-center-pdf-container", "markdown-rendered");
-          import_obsidian.MarkdownRenderer.render(this.app, `![[${file.path}]]`, centerContentEl, file.path, this);
+          centerContentEl.addClass("spotlight-center-pdf-container");
+          const resourcePath = this.app.vault.getResourcePath(file);
+          const iframe = centerContentEl.createEl("iframe", {
+            cls: "spotlight-pdf-iframe",
+            attr: {
+              src: resourcePath,
+              type: "application/pdf"
+            }
+          });
         } else {
           this.app.vault.cachedRead(file).then((content) => {
             if (this.currentIndex !== renderIndex) return;
