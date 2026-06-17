@@ -4,8 +4,13 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     outline: none;
+    background-color: var(--background-primary);
 }
 
 .spotlight-sidebar-toggle {
