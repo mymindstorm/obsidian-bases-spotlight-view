@@ -246,3 +246,24 @@
     flex-wrap: wrap;
     gap: 4px;
 }
+
+/* Center and enlarge error messages */
+.spotlight-error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.spotlight-error-icon {
+    font-size: 4em;
+    margin-bottom: 15px;
+}
+
+.spotlight-error-message {
+    font-size: 1.5em;
+    font-weight: 500;
+}
