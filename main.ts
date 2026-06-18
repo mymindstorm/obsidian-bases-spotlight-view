@@ -59,6 +59,28 @@ class SpotlightView extends BasesView {
             cls: 'spotlight-sidebar-toggle'
         });
         toggleBtn.addEventListener('click', () => this.toggleSidebar());
+
+        const fullscreenBtn = this.containerEl.createEl('button', {
+            text: 'Full Screen',
+            cls: 'spotlight-fullscreen-toggle'
+        });
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                this.containerEl.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+        
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement === this.containerEl) {
+                fullscreenBtn.setText('Exit Full Screen');
+            } else {
+                fullscreenBtn.setText('Full Screen');
+            }
+        });
     }
 
     onDataUpdated(): void {
