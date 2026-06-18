@@ -239,3 +239,10 @@
 .spotlight-property-drag-below {
     border-bottom: 2px solid var(--interactive-accent);
 }
+
+/* Allow list values to fill up one line before wrapping */
+.value-list-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
