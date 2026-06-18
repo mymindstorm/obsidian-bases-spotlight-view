@@ -179,7 +179,10 @@ class SpotlightView extends BasesView {
                 }
             } else {
                 this.centerEl.removeClass('spotlight-center-no-padding');
-                centerContentEl.createEl('div', { text: valueStr, cls: 'spotlight-attribute-content' });
+                centerContentEl.empty();
+                centerContentEl.addClass('spotlight-error-container');
+                centerContentEl.createEl('div', { text: '❓', cls: 'spotlight-error-icon' });
+                centerContentEl.createEl('div', { text: `File not found: ${valueStr}`, cls: 'spotlight-error-message' });
             }
         } else {
             // Display page content
@@ -559,7 +562,9 @@ export default class BasesSpotlightPlugin extends Plugin {
                     key: 'spotlight_property',
                     displayName: 'Spotlight Content Property',
                     // @ts-ignore
-                    description: 'Select an attribute to display in the center instead of the page content'
+                    description: 'Select an attribute to display in the center instead of the page content',
+                    // @ts-ignore
+                    tooltip: 'You need to use a [[]] reference to a file to use it'
                 } as BasesPropertyOption
             ]
         });
