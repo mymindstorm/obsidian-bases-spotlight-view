@@ -562,9 +562,7 @@ export default class BasesSpotlightPlugin extends Plugin {
                     key: 'spotlight_property',
                     displayName: 'Spotlight Content Property',
                     // @ts-ignore
-                    description: 'Select an attribute to display in the center instead of the page content',
-                    // @ts-ignore
-                    tooltip: 'You need to use a [[]] reference to a file to use it'
+                    description: 'Select an attribute to display in the center instead of the page content'
                 } as BasesPropertyOption
             ]
         });

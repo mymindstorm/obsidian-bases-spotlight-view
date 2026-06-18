@@ -20,7 +20,7 @@ Whether you're organizing a collection of PDFs, sorting a gallery of images, or 
 1. Install the plugin alongside the **Bases** plugin.
 2. In any Base view, switch the view type to **Spotlight View**.
 3. Use the pagination controls (or arrow keys) to quickly cycle through the files returned by your Base's query.
-4. Customize your experience via the Base View Options (e.g., configuring the **Spotlight Content Property**).
+4. Customize your experience via the Base View Options (e.g., configuring the **Spotlight Content Property**). *Note: To use the Spotlight Content Property successfully, you must use a standard `[[]]` reference to a file in the property.*
 
 ## Development
 
