@@ -77,8 +77,10 @@ class SpotlightView extends BasesView {
         document.addEventListener('fullscreenchange', () => {
             if (document.fullscreenElement === this.containerEl) {
                 fullscreenBtn.setText('Exit Full Screen');
+                this.containerEl.addClass('spotlight-is-fullscreen');
             } else {
                 fullscreenBtn.setText('Full Screen');
+                this.containerEl.removeClass('spotlight-is-fullscreen');
             }
         });
     }

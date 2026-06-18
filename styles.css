@@ -63,6 +63,11 @@
     background-color: var(--background-modifier-border-hover);
 }
 
+.spotlight-is-fullscreen .spotlight-sidebar-toggle,
+.spotlight-is-fullscreen .spotlight-fullscreen-toggle {
+    display: none;
+}
+
 .spotlight-center {
     flex: 1;
     display: flex;
