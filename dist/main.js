@@ -224,24 +224,29 @@ var SpotlightView = class extends import_obsidian.BasesView {
           var _a, _b, _c;
           if (valContainerEl.querySelector(".spotlight-property-edit-input")) return;
           const propName = prop.substring(5);
-          let fileToEdit = entry.file;
-          if (fileToEdit.extension !== "md") {
-            const sidecarPath = fileToEdit.path + ".md";
-            let sidecar = this.app.vault.getAbstractFileByPath(sidecarPath);
-            if (!sidecar) {
-              sidecar = await this.app.vault.create(sidecarPath, "");
-            }
-            fileToEdit = sidecar;
+          let originalFile = entry.file;
+          let targetIsBinary = originalFile.extension !== "md";
+          let sidecarPath = targetIsBinary ? originalFile.path + ".md" : null;
+          let sidecar = sidecarPath ? this.app.vault.getAbstractFileByPath(sidecarPath) : null;
+          let fileToRead = targetIsBinary ? sidecar : originalFile;
+          let rawValue = void 0;
+          if (fileToRead instanceof import_obsidian.TFile) {
+            const cache = this.app.metadataCache.getFileCache(fileToRead);
+            rawValue = (_a = cache == null ? void 0 : cache.frontmatter) == null ? void 0 : _a[propName];
           }
-          const cache = this.app.metadataCache.getFileCache(fileToEdit);
-          const rawValue = (_a = cache == null ? void 0 : cache.frontmatter) == null ? void 0 : _a[propName];
           const typeManager = this.app.metadataTypeManager;
           const propType = (_c = (_b = typeManager == null ? void 0 : typeManager.getPropertyInfo) == null ? void 0 : _b.call(typeManager, propName)) == null ? void 0 : _c.type;
           const isCheckbox = propType === "checkbox" || typeof rawValue === "boolean";
           if (isCheckbox) {
-            this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
-              fm[propName] = !rawValue;
-            });
+            let fileToEdit = fileToRead;
+            if (!fileToEdit && sidecarPath) {
+              fileToEdit = await this.app.vault.create(sidecarPath, "");
+            }
+            if (fileToEdit instanceof import_obsidian.TFile) {
+              this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
+                fm[propName] = !rawValue;
+              });
+            }
             return;
           }
           const editValue = rawValue !== void 0 ? typeof rawValue === "object" ? JSON.stringify(rawValue) : String(rawValue) : "";
@@ -260,14 +265,24 @@ var SpotlightView = class extends import_obsidian.BasesView {
               else if (!isNaN(Number(newValStr)) && newValStr !== "") parsedVal = Number(newValStr);
             } catch (err) {
             }
-            await this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
+            let fileToEdit = fileToRead;
+            if (!fileToEdit && sidecarPath) {
               if (newValStr === "") {
-                delete fm[propName];
-              } else {
-                fm[propName] = parsedVal;
+                this.render();
+                return;
               }
-            });
-            if (fileToEdit !== entry.file) {
+              fileToEdit = await this.app.vault.create(sidecarPath, "");
+            }
+            if (fileToEdit instanceof import_obsidian.TFile) {
+              await this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
+                if (newValStr === "") {
+                  delete fm[propName];
+                } else {
+                  fm[propName] = parsedVal;
+                }
+              });
+            }
+            if (fileToEdit !== originalFile) {
               setTimeout(() => this.render(), 100);
             }
           };

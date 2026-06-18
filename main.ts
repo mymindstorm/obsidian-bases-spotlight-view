@@ -261,19 +261,19 @@ class SpotlightView extends BasesView {
                     
                     const propName = prop.substring(5);
                     
-                    // Determine which file to edit
-                    let fileToEdit = entry.file as TFile;
-                    if (fileToEdit.extension !== 'md') {
-                        const sidecarPath = fileToEdit.path + '.md';
-                        let sidecar = this.app.vault.getAbstractFileByPath(sidecarPath);
-                        if (!sidecar) {
-                            sidecar = await this.app.vault.create(sidecarPath, '');
-                        }
-                        fileToEdit = sidecar as TFile;
-                    }
+                    // Determine which file to read/edit
+                    let originalFile = entry.file as TFile;
+                    let targetIsBinary = originalFile.extension !== 'md';
+                    let sidecarPath = targetIsBinary ? originalFile.path + '.md' : null;
+                    let sidecar = sidecarPath ? this.app.vault.getAbstractFileByPath(sidecarPath) as TFile | null : null;
+                    
+                    let fileToRead = targetIsBinary ? sidecar : originalFile;
 
-                    const cache = this.app.metadataCache.getFileCache(fileToEdit);
-                    const rawValue = cache?.frontmatter?.[propName];
+                    let rawValue: any = undefined;
+                    if (fileToRead instanceof TFile) {
+                        const cache = this.app.metadataCache.getFileCache(fileToRead);
+                        rawValue = cache?.frontmatter?.[propName];
+                    }
                     
                     // Use Obsidian's internal type manager if available to detect checkbox properties
                     const typeManager = (this.app as any).metadataTypeManager;
@@ -281,9 +281,16 @@ class SpotlightView extends BasesView {
                     const isCheckbox = propType === 'checkbox' || typeof rawValue === 'boolean';
 
                     if (isCheckbox) {
-                        this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
-                            fm[propName] = !rawValue;
-                        });
+                        // For checkboxes, create sidecar immediately if needed, since there's no input phase
+                        let fileToEdit = fileToRead;
+                        if (!fileToEdit && sidecarPath) {
+                            fileToEdit = await this.app.vault.create(sidecarPath, '') as TFile;
+                        }
+                        if (fileToEdit instanceof TFile) {
+                            this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
+                                fm[propName] = !rawValue;
+                            });
+                        }
                         return; // Handled directly, no need for textbox
                     }
 
@@ -308,16 +315,29 @@ class SpotlightView extends BasesView {
                             // Keep as string
                         }
 
-                        await this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
+                        // Create sidecar now if needed
+                        let fileToEdit = fileToRead;
+                        if (!fileToEdit && sidecarPath) {
+                            // Only create if we are actually saving a value, don't create for empty cancels
                             if (newValStr === '') {
-                                delete fm[propName];
-                            } else {
-                                fm[propName] = parsedVal;
+                                this.render();
+                                return;
                             }
-                        });
+                            fileToEdit = await this.app.vault.create(sidecarPath, '') as TFile;
+                        }
+
+                        if (fileToEdit instanceof TFile) {
+                            await this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
+                                if (newValStr === '') {
+                                    delete fm[propName];
+                                } else {
+                                    fm[propName] = parsedVal;
+                                }
+                            });
+                        }
                         
-                        // Force rerender if we created/edited a sidecar manually, as Bases might not react to it if the base query is for the binary file
-                        if (fileToEdit !== entry.file) {
+                        // Force rerender if we created/edited a sidecar manually
+                        if (fileToEdit !== originalFile) {
                             setTimeout(() => this.render(), 100);
                         }
                     };
