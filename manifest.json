@@ -1,9 +1,9 @@
 {
   "id": "bases-spotlight-view",
   "name": "Bases Spotlight View",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.10.0",
-  "description": "A spotlight view for Obsidian Bases. Focuses on content with an attributes sidebar.",
+  "description": "A spotlight view for Bases. Focuses on content with an attributes sidebar.",
   "author": "mymindstorm",
   "authorUrl": "https://github.com/mymindstorm",
   "isDesktopOnly": false

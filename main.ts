@@ -5,16 +5,14 @@ import {
     MarkdownRenderer,
     QueryController,
     TFile,
-    PluginSettingTab,
-    Setting
-} from 'obsidian';
+    } from 'obsidian';
 
-interface SpotlightSettings {
+interface Spotlights {
     propertyHeights: Record<string, number>;
     propertyOrder: string[];
 }
 
-const DEFAULT_SETTINGS: SpotlightSettings = {
+const DEFAULT_SETTINGS: Spotlights = {
     propertyHeights: {},
     propertyOrder: []
 };
@@ -65,17 +63,17 @@ class SpotlightView extends BasesView {
             cls: 'spotlight-fullscreen-toggle'
         });
         fullscreenBtn.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                this.containerEl.requestFullscreen().catch(err => {
+            if (!activeDocument.fullscreenElement) {
+                this.containerEl.requestFullscreen().catch(_err => {
                     console.error(`Error attempting to enable fullscreen: ${err.message}`);
                 });
             } else {
-                document.exitFullscreen();
+                activeDocument.exitFullscreen();
             }
         });
         
-        document.addEventListener('fullscreenchange', () => {
-            if (document.fullscreenElement === this.containerEl) {
+        activeDocument.addEventListener('fullscreenchange', () => {
+            if (activeDocument.fullscreenElement === this.containerEl) {
                 fullscreenBtn.setText('Exit Full Screen');
                 this.containerEl.addClass('spotlight-is-fullscreen');
             } else {
@@ -106,16 +104,16 @@ class SpotlightView extends BasesView {
     private toggleSidebar() {
         this.sidebarVisible = !this.sidebarVisible;
         if (this.sidebarVisible) {
-            this.sidebarEl.style.display = 'flex';
+            this.sidebarEl.setCssStyles({ display: 'flex' });
         } else {
-            this.sidebarEl.style.display = 'none';
+            this.sidebarEl.setCssStyles({ display: 'none' });
         }
     }
 
     private initResize(e: MouseEvent) {
         this.isResizing = true;
-        document.addEventListener('mousemove', this.doResize);
-        document.addEventListener('mouseup', this.stopResize);
+        activeDocument.addEventListener('mousemove', this.doResize);
+        activeDocument.addEventListener('mouseup', this.stopResize);
     }
 
     private doResize = (e: MouseEvent) => {
@@ -125,14 +123,14 @@ class SpotlightView extends BasesView {
         const newWidth = containerRect.right - e.clientX;
         if (newWidth > 100 && newWidth < containerRect.width - 100) {
             this.sidebarWidth = newWidth;
-            this.sidebarEl.style.width = `${this.sidebarWidth}px`;
+            this.sidebarEl.setCssStyles({ width: `${this.sidebarWidth}px` });
         }
     }
 
     private stopResize = () => {
         this.isResizing = false;
-        document.removeEventListener('mousemove', this.doResize);
-        document.removeEventListener('mouseup', this.stopResize);
+        activeDocument.removeEventListener('mousemove', this.doResize);
+        activeDocument.removeEventListener('mouseup', this.stopResize);
     }
 
     private handleKeyDown(e: KeyboardEvent) {
@@ -220,7 +218,7 @@ class SpotlightView extends BasesView {
         }
 
         // Render Sidebar
-        this.sidebarEl.style.width = `${this.sidebarWidth}px`;
+        this.sidebarEl.setCssStyles({ width: `${this.sidebarWidth}px` });
         const sidebarTitle = this.sidebarEl.createEl('h3', { text: 'Attributes' });
         sidebarTitle.addClass('spotlight-sidebar-title');
 
@@ -234,7 +232,8 @@ class SpotlightView extends BasesView {
         });
 
         // Resolve target file and sidecar once
-        let targetFile = entry.file as TFile;
+        let targetFile = entry.file instanceof TFile ? entry.file : null;
+        if (!targetFile) return;
         let isBinary = targetFile.extension !== 'md';
         let sidecarFile: TFile | null = null;
         
@@ -263,7 +262,7 @@ class SpotlightView extends BasesView {
             
             // Reordering logic: only the name is draggable
             propNameEl.draggable = true;
-            propNameEl.style.cursor = 'grab'; // show grab cursor on the name
+            propNameEl.setCssStyles({ cursor: 'grab' }); // show grab cursor on the name
             
             propNameEl.addEventListener('dragstart', (e) => {
                 e.dataTransfer?.setData('text/plain', prop);
@@ -292,7 +291,7 @@ class SpotlightView extends BasesView {
                 propEl.classList.remove('spotlight-property-drag-over');
                 propEl.classList.remove('spotlight-property-drag-below');
             });
-            propEl.addEventListener('drop', async (e) => {
+            propEl.addEventListener('drop', (e) => { const doDrop = async () => {
                 e.preventDefault();
                 propEl.classList.remove('spotlight-property-drag-over');
                 propEl.classList.remove('spotlight-property-drag-below');
@@ -313,8 +312,10 @@ class SpotlightView extends BasesView {
                 currentOrder.splice(toIndex, 0, draggedProp);
                 
                 this.plugin.settings.propertyOrder = currentOrder;
-                await this.plugin.saveSettings();
+                await this.plugin.saves();
                 this.render();
+                };
+                doDrop().catch(console.error);
             });
 
             
@@ -322,8 +323,7 @@ class SpotlightView extends BasesView {
             
             // Set saved height
             if (this.plugin.settings.propertyHeights[prop]) {
-                valContainerEl.style.height = `${this.plugin.settings.propertyHeights[prop]}px`;
-                valContainerEl.style.maxHeight = 'none';
+                valContainerEl.setCssStyles({ height: `${this.plugin.settings.propertyHeights[prop]}px`, maxHeight: 'none' });
             }
 
             const valEl = valContainerEl.createDiv({ cls: 'spotlight-property-value spotlight-scrollable-text' });
@@ -336,19 +336,20 @@ class SpotlightView extends BasesView {
             
             const onMouseMove = (e: MouseEvent) => {
                 const newHeight = Math.max(20, startHeight + (e.clientY - startY));
-                valContainerEl.style.height = `${newHeight}px`;
-                valContainerEl.style.maxHeight = 'none';
+                valContainerEl.setCssStyles({ height: `${newHeight}px`, maxHeight: 'none' });
             };
             
-            const onMouseUp = async () => {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
+            const onMouseUp = () => { const doMouseUp = async () => {
+                activeDocument.removeEventListener('mousemove', onMouseMove);
+                activeDocument.removeEventListener('mouseup', onMouseUp);
                 
-                setTimeout(() => { this.isResizing = false; }, 50);
+                window.setTimeout(() => { this.isResizing = false; }, 50);
                 
                 const currentHeight = valContainerEl.getBoundingClientRect().height;
                 this.plugin.settings.propertyHeights[prop] = currentHeight;
-                await this.plugin.saveSettings();
+                await this.plugin.saves();
+                };
+                doMouseUp().catch(console.error);
             };
             
             resizerEl.addEventListener('mousedown', (e) => {
@@ -357,8 +358,8 @@ class SpotlightView extends BasesView {
                 this.isResizing = true;
                 startY = e.clientY;
                 startHeight = valContainerEl.getBoundingClientRect().height;
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
+                activeDocument.addEventListener('mousemove', onMouseMove);
+                activeDocument.addEventListener('mouseup', onMouseUp);
             });
             
             resizerEl.addEventListener('click', (e) => {
@@ -379,13 +380,13 @@ class SpotlightView extends BasesView {
 
             if (isEmpty) {
                 valEl.setText('—');
-                valEl.style.color = 'var(--text-faint)';
+                valEl.setCssStyles({ color: 'var(--text-faint)' });
             }
 
             // Editable logic
             if (prop.startsWith('note.') && entry.file instanceof TFile) {
                 propEl.title = "Click to edit";
-                propEl.style.cursor = "pointer";
+                propEl.setCssStyles({ cursor: "pointer" });
                 propEl.addEventListener('click', async (e) => {
                     // Prevent edit if we just finished resizing or clicked the resizer
                     if (this.isResizing || (e.target as HTMLElement).closest('.spotlight-property-resizer')) return;
@@ -445,7 +446,7 @@ class SpotlightView extends BasesView {
                             } else if (newValStr === 'true') parsedVal = true;
                             else if (newValStr === 'false') parsedVal = false;
                             else if (!isNaN(Number(newValStr)) && newValStr !== '') parsedVal = Number(newValStr);
-                        } catch (err) {
+                        } catch (_err) {
                             // Keep as string
                         }
 
@@ -472,7 +473,7 @@ class SpotlightView extends BasesView {
                         
                         // Force rerender if we created/edited a sidecar manually
                         if (fileToEdit !== originalFile) {
-                            setTimeout(() => this.render(), 100);
+                            window.setTimeout(() => this.render(), 100);
                         }
                     };
 
@@ -574,7 +575,7 @@ class SpotlightView extends BasesView {
                 containerEl.empty();
                 containerEl.addClass('markdown-rendered', 'markdown-preview-view');
                 MarkdownRenderer.render(this.app, content, containerEl, file.path, this);
-            }).catch(err => {
+            }).catch(_err => {
                 if (this.currentIndex !== renderIndex) return;
                 containerEl.empty();
                 containerEl.createEl('div', { text: `Could not load content for ${file.name}.` });
@@ -584,10 +585,10 @@ class SpotlightView extends BasesView {
 }
 
 export default class BasesSpotlightPlugin extends Plugin {
-    settings: SpotlightSettings;
+    settings: Spotlights;
 
     async onload() {
-        await this.loadSettings();
+        await this.loads();
 
         this.registerBasesView('bases-spotlight-view', {
             name: "Spotlight View",
@@ -612,11 +613,11 @@ export default class BasesSpotlightPlugin extends Plugin {
         // Cleanup if necessary
     }
 
-    async loadSettings() {
+    async loads() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     }
 
-    async saveSettings() {
+    async saves() {
         await this.saveData(this.settings);
     }
 }
