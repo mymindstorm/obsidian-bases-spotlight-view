@@ -121,11 +121,18 @@ var SpotlightView = class extends import_obsidian.BasesView {
       this.currentIndex = 0;
     }
     const entry = entries[this.currentIndex];
+    let shouldRenderProperty = false;
+    let valueStr = "";
     const spotlightProperty = this.config.get("spotlight_property");
     const centerContentEl = this.centerEl.createDiv("spotlight-center-content");
     if (spotlightProperty && spotlightProperty !== "") {
       const propValue = entry.getValue(spotlightProperty);
-      const valueStr = this.formatValue(propValue);
+      valueStr = this.formatValue(propValue);
+      if (valueStr !== "") {
+        shouldRenderProperty = true;
+      }
+    }
+    if (shouldRenderProperty) {
       const linkMatch = valueStr.match(/\[\[(.*?)\]\]/);
       if (linkMatch) {
         const linkText = linkMatch[1];

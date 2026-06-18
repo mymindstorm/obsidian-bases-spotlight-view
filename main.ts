@@ -133,13 +133,20 @@ class SpotlightView extends BasesView {
         const entry = entries[this.currentIndex];
 
         // Render Spotlight Center
+        let shouldRenderProperty = false;
+        let valueStr = '';
         const spotlightProperty = this.config.get('spotlight_property') as string | undefined;
         const centerContentEl = this.centerEl.createDiv('spotlight-center-content');
         
         if (spotlightProperty && spotlightProperty !== '') {
             const propValue = entry.getValue(spotlightProperty as any);
-            const valueStr = this.formatValue(propValue);
-            
+            valueStr = this.formatValue(propValue);
+            if (valueStr !== '') {
+                shouldRenderProperty = true;
+            }
+        }
+
+        if (shouldRenderProperty) {
             const linkMatch = valueStr.match(/\[\[(.*?)\]\]/);
             if (linkMatch) {
                 const linkText = linkMatch[1];
