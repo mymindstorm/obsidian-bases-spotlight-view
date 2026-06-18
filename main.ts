@@ -50,6 +50,20 @@ class SpotlightView extends BasesView {
         this.render();
     }
 
+    private get filteredEntries(): any[] {
+        if (!this.data || !this.data.data) return [];
+        return this.data.data.filter((entry: any) => {
+            const file = entry.file;
+            if (file instanceof TFile && file.extension !== 'md') {
+                const sidecarPath = file.path + '.md';
+                if (this.app.vault.getAbstractFileByPath(sidecarPath)) {
+                    return false; // Hide original file if shadow md exists
+                }
+            }
+            return true;
+        });
+    }
+
     private toggleSidebar() {
         this.sidebarVisible = !this.sidebarVisible;
         if (this.sidebarVisible) {
@@ -83,10 +97,11 @@ class SpotlightView extends BasesView {
     }
 
     private handleKeyDown(e: KeyboardEvent) {
-        if (!this.data || !this.data.data.length) return;
+        const entries = this.filteredEntries;
+        if (!entries.length) return;
         
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-            this.currentIndex = Math.min(this.currentIndex + 1, this.data.data.length - 1);
+            this.currentIndex = Math.min(this.currentIndex + 1, entries.length - 1);
             this.render();
             e.preventDefault();
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
@@ -100,20 +115,22 @@ class SpotlightView extends BasesView {
         this.centerEl.empty();
         this.sidebarEl.empty();
 
-        if (!this.data || !this.data.data || this.data.data.length === 0) {
+        const entries = this.filteredEntries;
+
+        if (!entries.length) {
             this.centerEl.createEl('div', { text: 'No entries found.', cls: 'spotlight-empty' });
             return;
         }
 
         // Clamp index
-        if (this.currentIndex >= this.data.data.length) {
-            this.currentIndex = this.data.data.length - 1;
+        if (this.currentIndex >= entries.length) {
+            this.currentIndex = entries.length - 1;
         }
         if (this.currentIndex < 0) {
             this.currentIndex = 0;
         }
 
-        const entry = this.data.data[this.currentIndex];
+        const entry = entries[this.currentIndex];
 
         // Render Spotlight Center
         const spotlightProperty = this.config.get('spotlight_property') as string | undefined;
@@ -321,7 +338,7 @@ class SpotlightView extends BasesView {
         }
 
         const countEl = this.sidebarEl.createDiv('spotlight-count');
-        countEl.setText(`Entry ${this.currentIndex + 1} of ${this.data.data.length}`);
+        countEl.setText(`Entry ${this.currentIndex + 1} of ${entries.length}`);
     }
 
     private formatValue(val: any): string {
