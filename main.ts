@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: Spotlights = {
 
 
 interface BasesEntry {
-    file: import('obsidian').TFile | null;
+    file: TFile | null;
     getValue: (prop: string) => unknown;
 }
 
@@ -229,7 +229,7 @@ class SpotlightView extends BasesView {
         } else {
             // Display page content
             let file = entry.file;
-            if (file instanceof import('obsidian').TFile) {
+            if (file instanceof TFile) {
                 this.renderFileContent(file, centerContentEl, this.currentIndex);
             } else {
                 this.centerEl.removeClass('spotlight-center-no-padding');
@@ -253,7 +253,7 @@ class SpotlightView extends BasesView {
 
         // Resolve target file and sidecar once
         let targetFile = entry.file;
-        if (!(targetFile instanceof import('obsidian').TFile)) return;
+        if (!(targetFile instanceof TFile)) return;
         if (!targetFile) return;
         let isBinary = targetFile.extension !== 'md';
         let sidecarFile: TFile | null = null;
@@ -420,10 +420,10 @@ class SpotlightView extends BasesView {
                     
                     // Determine which file to read/edit
                     let originalFile = entry.file;
-                    if (!(originalFile instanceof import('obsidian').TFile)) return;
+                    if (!(originalFile instanceof TFile)) return;
                     let targetIsBinary = originalFile.extension !== 'md';
                     let sidecarPath = targetIsBinary ? originalFile.path + '.md' : null;
-                    let sidecar = sidecarPath ? (this.app.vault.getAbstractFileByPath(sidecarPath) instanceof import('obsidian').TFile ? this.app.vault.getAbstractFileByPath(sidecarPath) : null) : null;
+                    let sidecar = sidecarPath ? (this.app.vault.getAbstractFileByPath(sidecarPath) instanceof TFile ? this.app.vault.getAbstractFileByPath(sidecarPath) : null) : null;
                     
                     let fileToRead = targetIsBinary ? sidecar : originalFile;
 
@@ -443,7 +443,7 @@ class SpotlightView extends BasesView {
                         let fileToEdit = fileToRead;
                         if (!fileToEdit && sidecarPath) {
                             const newFile = await this.app.vault.create(sidecarPath, '');
-                            fileToEdit = newFile instanceof import('obsidian').TFile ? newFile : null;
+                            fileToEdit = newFile instanceof TFile ? newFile : null;
                         }
                         if (fileToEdit instanceof TFile) {
                             this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
@@ -483,7 +483,7 @@ class SpotlightView extends BasesView {
                                 return;
                             }
                             const newFile = await this.app.vault.create(sidecarPath, '');
-                            fileToEdit = newFile instanceof import('obsidian').TFile ? newFile : null;
+                            fileToEdit = newFile instanceof TFile ? newFile : null;
                         }
 
                         if (fileToEdit instanceof TFile) {
