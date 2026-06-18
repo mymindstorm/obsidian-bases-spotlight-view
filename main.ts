@@ -548,6 +548,7 @@ export default class BasesSpotlightPlugin extends Plugin {
 
         this.registerBasesView('bases-spotlight-view', {
             name: "Spotlight View",
+            icon: "presentation",
             factory: (controller: QueryController, containerEl: HTMLElement) => {
                 const view = new SpotlightView(controller, containerEl, this);
                 return view;
