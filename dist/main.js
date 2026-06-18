@@ -28,8 +28,12 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
+var DEFAULT_SETTINGS = {
+  propertyHeights: {},
+  propertyOrder: []
+};
 var SpotlightView = class extends import_obsidian.BasesView {
-  constructor(controller, containerEl) {
+  constructor(controller, containerEl, plugin) {
     super(controller);
     this.type = "bases-spotlight-view";
     this.currentIndex = 0;
@@ -50,6 +54,7 @@ var SpotlightView = class extends import_obsidian.BasesView {
       document.removeEventListener("mousemove", this.doResize);
       document.removeEventListener("mouseup", this.stopResize);
     };
+    this.plugin = plugin;
     this.containerEl = containerEl;
     this.containerEl.addClass("spotlight-bases-view");
     this.containerEl.tabIndex = 0;
@@ -163,7 +168,14 @@ var SpotlightView = class extends import_obsidian.BasesView {
     this.sidebarEl.style.width = `${this.sidebarWidth}px`;
     const sidebarTitle = this.sidebarEl.createEl("h3", { text: "Attributes" });
     sidebarTitle.addClass("spotlight-sidebar-title");
-    const properties = this.data.properties || [];
+    let properties = [...this.data.properties || []];
+    const orderMap = /* @__PURE__ */ new Map();
+    this.plugin.settings.propertyOrder.forEach((p, i) => orderMap.set(p, i));
+    properties.sort((a, b) => {
+      const indexA = orderMap.has(a) ? orderMap.get(a) : Infinity;
+      const indexB = orderMap.has(b) ? orderMap.get(b) : Infinity;
+      return indexA - indexB;
+    });
     let targetFile = entry.file;
     let isBinary = targetFile.extension !== "md";
     let sidecarFile = null;
@@ -182,9 +194,89 @@ var SpotlightView = class extends import_obsidian.BasesView {
         }
       }
       const propEl = this.sidebarEl.createDiv("spotlight-property");
+      propEl.dataset.prop = prop;
+      propEl.draggable = true;
+      propEl.addEventListener("dragstart", (e) => {
+        var _a;
+        if (e.target.classList.contains("spotlight-property-resizer")) {
+          e.preventDefault();
+          return;
+        }
+        (_a = e.dataTransfer) == null ? void 0 : _a.setData("text/plain", prop);
+        propEl.classList.add("spotlight-property-dragging");
+      });
+      propEl.addEventListener("dragend", () => {
+        propEl.classList.remove("spotlight-property-dragging");
+        this.sidebarEl.querySelectorAll(".spotlight-property-drag-over").forEach((el) => el.classList.remove("spotlight-property-drag-over"));
+        this.sidebarEl.querySelectorAll(".spotlight-property-drag-below").forEach((el) => el.classList.remove("spotlight-property-drag-below"));
+      });
+      propEl.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const rect = propEl.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        if (e.clientY < midY) {
+          propEl.classList.add("spotlight-property-drag-over");
+          propEl.classList.remove("spotlight-property-drag-below");
+        } else {
+          propEl.classList.add("spotlight-property-drag-below");
+          propEl.classList.remove("spotlight-property-drag-over");
+        }
+      });
+      propEl.addEventListener("dragleave", () => {
+        propEl.classList.remove("spotlight-property-drag-over");
+        propEl.classList.remove("spotlight-property-drag-below");
+      });
+      propEl.addEventListener("drop", async (e) => {
+        var _a;
+        e.preventDefault();
+        propEl.classList.remove("spotlight-property-drag-over");
+        propEl.classList.remove("spotlight-property-drag-below");
+        const draggedProp = (_a = e.dataTransfer) == null ? void 0 : _a.getData("text/plain");
+        if (!draggedProp || draggedProp === prop) return;
+        const rect = propEl.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const insertAfter = e.clientY >= midY;
+        const currentOrder = [...properties];
+        const fromIndex = currentOrder.indexOf(draggedProp);
+        if (fromIndex > -1) currentOrder.splice(fromIndex, 1);
+        let toIndex = currentOrder.indexOf(prop);
+        if (insertAfter) toIndex++;
+        currentOrder.splice(toIndex, 0, draggedProp);
+        this.plugin.settings.propertyOrder = currentOrder;
+        await this.plugin.saveSettings();
+        this.render();
+      });
       propEl.createDiv({ text: this.getPropName(prop), cls: "spotlight-property-name" });
       const valContainerEl = propEl.createDiv({ cls: "spotlight-property-value-container" });
+      if (this.plugin.settings.propertyHeights[prop]) {
+        valContainerEl.style.height = `${this.plugin.settings.propertyHeights[prop]}px`;
+        valContainerEl.style.maxHeight = "none";
+      }
       const valEl = valContainerEl.createDiv({ cls: "spotlight-property-value spotlight-scrollable-text" });
+      const resizerEl = propEl.createDiv("spotlight-property-resizer");
+      resizerEl.draggable = false;
+      let startY = 0;
+      let startHeight = 0;
+      const onMouseMove = (e) => {
+        const newHeight = Math.max(20, startHeight + (e.clientY - startY));
+        valContainerEl.style.height = `${newHeight}px`;
+        valContainerEl.style.maxHeight = "none";
+      };
+      const onMouseUp = async () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        const currentHeight = valContainerEl.getBoundingClientRect().height;
+        this.plugin.settings.propertyHeights[prop] = currentHeight;
+        await this.plugin.saveSettings();
+      };
+      resizerEl.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startY = e.clientY;
+        startHeight = valContainerEl.getBoundingClientRect().height;
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+      });
       let isEmpty = false;
       if (val && typeof val.renderTo === "function") {
         val.renderTo(valEl, this.app.renderContext);
@@ -348,10 +440,11 @@ var SpotlightView = class extends import_obsidian.BasesView {
 };
 var BasesSpotlightPlugin = class extends import_obsidian.Plugin {
   async onload() {
+    await this.loadSettings();
     this.registerBasesView("bases-spotlight-view", {
       name: "Spotlight View",
       factory: (controller, containerEl) => {
-        const view = new SpotlightView(controller, containerEl);
+        const view = new SpotlightView(controller, containerEl, this);
         return view;
       },
       options: (config) => [
@@ -366,5 +459,11 @@ var BasesSpotlightPlugin = class extends import_obsidian.Plugin {
     });
   }
   onunload() {
+  }
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+  async saveSettings() {
+    await this.saveData(this.settings);
   }
 };
