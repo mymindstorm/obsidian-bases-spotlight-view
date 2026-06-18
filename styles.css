@@ -201,6 +201,7 @@
 .spotlight-property-edit-input {
     width: 100%;
     min-height: 50px;
+    flex: 1;
     font-family: inherit;
     font-size: inherit;
     background: var(--background-modifier-form-field);
@@ -208,7 +209,7 @@
     border: 1px solid var(--background-modifier-border-hover);
     border-radius: 4px;
     padding: 4px;
-    resize: vertical;
+    resize: none;
 }
 
 /* Property Drag and Drop Resizing */
