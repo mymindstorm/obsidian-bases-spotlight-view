@@ -174,9 +174,33 @@
     border-radius: 4px;
 }
 
-.spotlight-count {
+.spotlight-nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-top: auto;
     padding-top: 1rem;
+}
+
+.spotlight-nav-btn {
+    padding: 4px 12px;
+    background-color: var(--interactive-normal);
+    color: var(--text-normal);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.spotlight-nav-btn:hover:not(:disabled) {
+    background-color: var(--interactive-hover);
+}
+
+.spotlight-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spotlight-count {
     text-align: center;
     color: var(--text-faint);
     font-size: 0.85em;

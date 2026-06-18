@@ -467,8 +467,24 @@ class SpotlightView extends BasesView {
             }
         }
 
-        const countEl = this.sidebarEl.createDiv('spotlight-count');
+        const navContainerEl = this.sidebarEl.createDiv('spotlight-nav-container');
+        
+        const prevBtn = navContainerEl.createEl('button', { text: 'Previous', cls: 'spotlight-nav-btn' });
+        prevBtn.disabled = this.currentIndex === 0;
+        prevBtn.addEventListener('click', () => {
+            this.currentIndex = Math.max(this.currentIndex - 1, 0);
+            this.render();
+        });
+
+        const countEl = navContainerEl.createDiv('spotlight-count');
         countEl.setText(`Entry ${this.currentIndex + 1} of ${entries.length}`);
+
+        const nextBtn = navContainerEl.createEl('button', { text: 'Next', cls: 'spotlight-nav-btn' });
+        nextBtn.disabled = this.currentIndex === entries.length - 1;
+        nextBtn.addEventListener('click', () => {
+            this.currentIndex = Math.min(this.currentIndex + 1, entries.length - 1);
+            this.render();
+        });
     }
 
     private formatValue(val: any): string {
