@@ -262,6 +262,9 @@ var SpotlightView = class extends import_obsidian.BasesView {
       const onMouseUp = async () => {
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
+        setTimeout(() => {
+          this.isResizing = false;
+        }, 50);
         const currentHeight = valContainerEl.getBoundingClientRect().height;
         this.plugin.settings.propertyHeights[prop] = currentHeight;
         await this.plugin.saveSettings();
@@ -269,10 +272,15 @@ var SpotlightView = class extends import_obsidian.BasesView {
       resizerEl.addEventListener("mousedown", (e) => {
         e.preventDefault();
         e.stopPropagation();
+        this.isResizing = true;
         startY = e.clientY;
         startHeight = valContainerEl.getBoundingClientRect().height;
         document.addEventListener("mousemove", onMouseMove);
         document.addEventListener("mouseup", onMouseUp);
+      });
+      resizerEl.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
       });
       let isEmpty = false;
       if (val && typeof val.renderTo === "function") {
@@ -292,6 +300,7 @@ var SpotlightView = class extends import_obsidian.BasesView {
         propEl.style.cursor = "pointer";
         propEl.addEventListener("click", async (e) => {
           var _a, _b, _c;
+          if (this.isResizing || e.target.closest(".spotlight-property-resizer")) return;
           if (valContainerEl.querySelector(".spotlight-property-edit-input")) return;
           const propName = prop.substring(5);
           let originalFile = entry.file;

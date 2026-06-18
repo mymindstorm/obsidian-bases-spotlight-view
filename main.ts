@@ -317,6 +317,8 @@ class SpotlightView extends BasesView {
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
                 
+                setTimeout(() => { this.isResizing = false; }, 50);
+                
                 const currentHeight = valContainerEl.getBoundingClientRect().height;
                 this.plugin.settings.propertyHeights[prop] = currentHeight;
                 await this.plugin.saveSettings();
@@ -325,10 +327,16 @@ class SpotlightView extends BasesView {
             resizerEl.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                this.isResizing = true;
                 startY = e.clientY;
                 startHeight = valContainerEl.getBoundingClientRect().height;
                 document.addEventListener('mousemove', onMouseMove);
                 document.addEventListener('mouseup', onMouseUp);
+            });
+            
+            resizerEl.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
             });
 
             let isEmpty = false;
@@ -352,6 +360,9 @@ class SpotlightView extends BasesView {
                 propEl.title = "Click to edit";
                 propEl.style.cursor = "pointer";
                 propEl.addEventListener('click', async (e) => {
+                    // Prevent edit if we just finished resizing or clicked the resizer
+                    if (this.isResizing || (e.target as HTMLElement).closest('.spotlight-property-resizer')) return;
+                    
                     // Prevent multiple inputs if already editing
                     if (valContainerEl.querySelector('.spotlight-property-edit-input')) return;
                     
