@@ -19,6 +19,11 @@ const DEFAULT_SETTINGS: Spotlights = {
 
 
 
+interface BasesEntry {
+    file: import('obsidian').TFile | null;
+    getValue: (prop: string) => unknown;
+}
+
 class SpotlightView extends BasesView {
     type = 'bases-spotlight-view';
     currentIndex = 0;
@@ -79,11 +84,11 @@ class SpotlightView extends BasesView {
         });
         fullscreenBtn.addEventListener('click', () => {
             if (!activeDocument.fullscreenElement) {
-                this.containerEl.requestFullscreen().catch(_err => {
+                this.containerEl.requestFullscreen().catch((_err: unknown) => {
                     console.error(`Error attempting to enable fullscreen: ${err.message}`);
                 });
             } else {
-                activeDocument.exitFullscreen();
+                activeDocument.exitFullscreen().catch(console.error);
             }
         });
         
@@ -102,9 +107,9 @@ class SpotlightView extends BasesView {
         this.render();
     }
 
-    private get filteredEntries(): any[] {
+    private get filteredEntries(): BasesEntry[] {
         if (!this.data || !this.data.data) return [];
-        return this.data.data.filter((entry: any) => {
+        return this.data.data.filter((entry: BasesEntry) => {
             const file = entry.file;
             if (file instanceof TFile && file.extension !== 'md') {
                 const sidecarPath = file.path + '.md';
@@ -191,7 +196,7 @@ class SpotlightView extends BasesView {
         const centerContentEl = this.centerEl.createDiv('spotlight-center-content');
         
         if (spotlightProperty && spotlightProperty !== '') {
-            const propValue = entry.getValue(spotlightProperty as any);
+            const propValue = entry.getValue(spotlightProperty);
             valueStr = this.formatValue(propValue);
             if (valueStr !== '') {
                 shouldRenderProperty = true;
@@ -224,7 +229,7 @@ class SpotlightView extends BasesView {
         } else {
             // Display page content
             let file = entry.file;
-            if (file instanceof TFile) {
+            if (file instanceof import('obsidian').TFile) {
                 this.renderFileContent(file, centerContentEl, this.currentIndex);
             } else {
                 this.centerEl.removeClass('spotlight-center-no-padding');
@@ -247,7 +252,8 @@ class SpotlightView extends BasesView {
         });
 
         // Resolve target file and sidecar once
-        let targetFile = entry.file instanceof TFile ? entry.file : null;
+        let targetFile = entry.file;
+        if (!(targetFile instanceof import('obsidian').TFile)) return;
         if (!targetFile) return;
         let isBinary = targetFile.extension !== 'md';
         let sidecarFile: TFile | null = null;
@@ -266,7 +272,7 @@ class SpotlightView extends BasesView {
                 const propName = prop.substring(5);
                 const cache = this.app.metadataCache.getFileCache(sidecarFile);
                 if (cache?.frontmatter && cache.frontmatter[propName] !== undefined) {
-                    val = cache.frontmatter[propName] as any;
+                    val = cache.frontmatter[propName];
                 }
             }
             
@@ -383,8 +389,8 @@ class SpotlightView extends BasesView {
             });
 
             let isEmpty = false;
-            if (val && typeof (val as any).renderTo === 'function') {
-                (val as any).renderTo(valEl, this.app.renderContext);
+            if (val && typeof (val as { renderTo?: Function }).renderTo === 'function') {
+                (val as { renderTo: Function }).renderTo(valEl, this.app.renderContext);
                 // Simple heuristic for empty rendered value
                 if (valEl.innerHTML === '') isEmpty = true;
             } else {
@@ -402,7 +408,8 @@ class SpotlightView extends BasesView {
             if (prop.startsWith('note.') && entry.file instanceof TFile) {
                 propEl.title = "Click to edit";
                 propEl.setCssStyles({ cursor: "pointer" });
-                propEl.addEventListener('click', async (e) => {
+                propEl.addEventListener('click', (e) => {
+                    const doClick = async () => {
                     // Prevent edit if we just finished resizing or clicked the resizer
                     if (this.isResizing || (e.target as HTMLElement).closest('.spotlight-property-resizer')) return;
                     
@@ -412,21 +419,22 @@ class SpotlightView extends BasesView {
                     const propName = prop.substring(5);
                     
                     // Determine which file to read/edit
-                    let originalFile = entry.file as TFile;
+                    let originalFile = entry.file;
+                    if (!(originalFile instanceof import('obsidian').TFile)) return;
                     let targetIsBinary = originalFile.extension !== 'md';
                     let sidecarPath = targetIsBinary ? originalFile.path + '.md' : null;
-                    let sidecar = sidecarPath ? this.app.vault.getAbstractFileByPath(sidecarPath) as TFile | null : null;
+                    let sidecar = sidecarPath ? (this.app.vault.getAbstractFileByPath(sidecarPath) instanceof import('obsidian').TFile ? this.app.vault.getAbstractFileByPath(sidecarPath) : null) : null;
                     
                     let fileToRead = targetIsBinary ? sidecar : originalFile;
 
-                    let rawValue: any = undefined;
+                    let rawValue: unknown = undefined;
                     if (fileToRead instanceof TFile) {
                         const cache = this.app.metadataCache.getFileCache(fileToRead);
                         rawValue = cache?.frontmatter?.[propName];
                     }
                     
                     // Use Obsidian's internal type manager if available to detect checkbox properties
-                    const typeManager = (this.app as any).metadataTypeManager;
+                    const typeManager = (this.app as unknown as { metadataTypeManager?: { getPropertyInfo: (p: string) => { type: string } } }).metadataTypeManager;
                     const propType = typeManager?.getPropertyInfo?.(propName)?.type;
                     const isCheckbox = propType === 'checkbox' || typeof rawValue === 'boolean';
 
@@ -434,7 +442,8 @@ class SpotlightView extends BasesView {
                         // For checkboxes, create sidecar immediately if needed, since there's no input phase
                         let fileToEdit = fileToRead;
                         if (!fileToEdit && sidecarPath) {
-                            fileToEdit = await this.app.vault.create(sidecarPath, '') as TFile;
+                            const newFile = await this.app.vault.create(sidecarPath, '');
+                            fileToEdit = newFile instanceof import('obsidian').TFile ? newFile : null;
                         }
                         if (fileToEdit instanceof TFile) {
                             this.app.fileManager.processFrontMatter(fileToEdit, (fm) => {
@@ -453,7 +462,7 @@ class SpotlightView extends BasesView {
 
                     const save = async () => {
                         const newValStr = inputEl.value;
-                        let parsedVal: any = newValStr;
+                        let parsedVal: unknown = newValStr;
                         try {
                             // Try to parse JSON (e.g. arrays like ["tag1", "tag2"])
                             if (newValStr.startsWith('[') || newValStr.startsWith('{')) {
@@ -461,7 +470,7 @@ class SpotlightView extends BasesView {
                             } else if (newValStr === 'true') parsedVal = true;
                             else if (newValStr === 'false') parsedVal = false;
                             else if (!isNaN(Number(newValStr)) && newValStr !== '') parsedVal = Number(newValStr);
-                        } catch (_err) {
+                        } catch (_err: unknown) {
                             // Keep as string
                         }
 
@@ -473,7 +482,8 @@ class SpotlightView extends BasesView {
                                 this.render();
                                 return;
                             }
-                            fileToEdit = await this.app.vault.create(sidecarPath, '') as TFile;
+                            const newFile = await this.app.vault.create(sidecarPath, '');
+                            fileToEdit = newFile instanceof import('obsidian').TFile ? newFile : null;
                         }
 
                         if (fileToEdit instanceof TFile) {
@@ -503,7 +513,9 @@ class SpotlightView extends BasesView {
                             this.render();
                         }
                     });
-                });
+                };
+                doClick().catch(console.error);
+            });
             }
         }
 
@@ -527,7 +539,7 @@ class SpotlightView extends BasesView {
         });
     }
 
-    private formatValue(val: any): string {
+    private formatValue(val: unknown): string {
         if (val === null || val === undefined) return '';
         if (typeof val === 'object') {
             if (Array.isArray(val)) return val.map(v => this.formatValue(v)).join(', ');
@@ -590,7 +602,7 @@ class SpotlightView extends BasesView {
                 containerEl.empty();
                 containerEl.addClass('markdown-rendered', 'markdown-preview-view');
                 MarkdownRenderer.render(this.app, content, containerEl, file.path, this);
-            }).catch(_err => {
+            }).catch((_err: unknown) => {
                 if (this.currentIndex !== renderIndex) return;
                 containerEl.empty();
                 containerEl.createEl('div', { text: `Could not load content for ${file.name}.` });
