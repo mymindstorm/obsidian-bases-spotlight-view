@@ -4,6 +4,8 @@
 
 Whether you're organizing a collection of PDFs, sorting a gallery of images, or just blazing through notes, Spotlight View gives you a distraction-free, highly interactive interface.
 
+![Spotlight View Screenshot](screenshot.png)
+
 ## Features
 
 - **Dual-Pane Interface**: A massive center viewing area to read or view the file, accompanied by a sleek right sidebar focused exclusively on its metadata properties.
