@@ -1,6 +1,6 @@
-# Bases Spotlight View for Obsidian
+# Obsidian Bases Spotlight View for Obsidian
 
-**Bases Spotlight View** is a powerful plugin that integrates tightly with the Obsidian [Bases](https://github.com/obsidianmd/bases) framework. It provides a beautiful, dual-pane "Spotlight" view specifically designed for rapidly browsing, tagging, and managing structured metadata for files in your vault.
+**Obsidian Bases Spotlight View** is a powerful plugin that integrates tightly with the Obsidian [Bases](https://github.com/obsidianmd/bases) framework. It provides a beautiful, dual-pane "Spotlight" view specifically designed for rapidly browsing, tagging, and managing structured metadata for files in your vault.
 
 Whether you're organizing a collection of PDFs, sorting a gallery of images, or just blazing through notes, Spotlight View gives you a distraction-free, highly interactive interface.
 
