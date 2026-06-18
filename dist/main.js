@@ -124,58 +124,32 @@ var SpotlightView = class extends import_obsidian.BasesView {
     const spotlightProperty = this.config.get("spotlight_property");
     const centerContentEl = this.centerEl.createDiv("spotlight-center-content");
     if (spotlightProperty && spotlightProperty !== "") {
-      this.centerEl.removeClass("spotlight-center-no-padding");
       const propValue = entry.getValue(spotlightProperty);
       const valueStr = this.formatValue(propValue);
-      centerContentEl.createEl("div", { text: valueStr, cls: "spotlight-attribute-content" });
+      const linkMatch = valueStr.match(/\[\[(.*?)\]\]/);
+      if (linkMatch) {
+        const linkText = linkMatch[1];
+        const linkPath = linkText.split("|")[0];
+        const destFile = this.app.metadataCache.getFirstLinkpathDest(linkPath, entry.file instanceof import_obsidian.TFile ? entry.file.path : "");
+        if (destFile instanceof import_obsidian.TFile) {
+          this.renderFileContent(destFile, centerContentEl, this.currentIndex);
+        } else {
+          this.centerEl.removeClass("spotlight-center-no-padding");
+          centerContentEl.empty();
+          centerContentEl.addClass("spotlight-error-container");
+          centerContentEl.createEl("div", { text: "\u2753", cls: "spotlight-error-icon" });
+          centerContentEl.createEl("div", { text: `File not found: ${linkPath}`, cls: "spotlight-error-message" });
+        }
+      } else {
+        this.centerEl.removeClass("spotlight-center-no-padding");
+        centerContentEl.createEl("div", { text: valueStr, cls: "spotlight-attribute-content" });
+      }
     } else {
       let file = entry.file;
       if (file instanceof import_obsidian.TFile) {
-        const sidecarMatch = file.name.match(/^(.*\.(png|jpg|jpeg|gif|bmp|svg|webp|pdf))\.md$/i);
-        if (sidecarMatch) {
-          const originalPath = file.path.slice(0, -3);
-          const originalFile = this.app.vault.getAbstractFileByPath(originalPath);
-          if (originalFile instanceof import_obsidian.TFile) {
-            file = originalFile;
-          }
-        }
-        const renderIndex = this.currentIndex;
-        const ext = file.extension.toLowerCase();
-        const imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"];
-        if (imageExtensions.includes(ext) || ext === "pdf") {
-          this.centerEl.addClass("spotlight-center-no-padding");
-        } else {
-          this.centerEl.removeClass("spotlight-center-no-padding");
-        }
-        if (imageExtensions.includes(ext)) {
-          centerContentEl.empty();
-          centerContentEl.addClass("spotlight-center-media-container");
-          const resourcePath = this.app.vault.getResourcePath(file);
-          centerContentEl.createEl("img", { attr: { src: resourcePath }, cls: "spotlight-media" });
-        } else if (ext === "pdf") {
-          centerContentEl.empty();
-          centerContentEl.addClass("spotlight-center-pdf-container");
-          const resourcePath = this.app.vault.getResourcePath(file);
-          const iframe = centerContentEl.createEl("iframe", {
-            cls: "spotlight-pdf-iframe",
-            attr: {
-              src: resourcePath,
-              type: "application/pdf"
-            }
-          });
-        } else {
-          this.app.vault.cachedRead(file).then((content) => {
-            if (this.currentIndex !== renderIndex) return;
-            centerContentEl.empty();
-            centerContentEl.addClass("markdown-rendered", "markdown-preview-view");
-            import_obsidian.MarkdownRenderer.render(this.app, content, centerContentEl, file.path, this);
-          }).catch((err) => {
-            if (this.currentIndex !== renderIndex) return;
-            centerContentEl.empty();
-            centerContentEl.createEl("div", { text: `Could not load content for ${file.name}.` });
-          });
-        }
+        this.renderFileContent(file, centerContentEl, this.currentIndex);
       } else {
+        this.centerEl.removeClass("spotlight-center-no-padding");
         centerContentEl.createEl("div", { text: "Cannot read file content." });
       }
     }
@@ -318,6 +292,51 @@ var SpotlightView = class extends import_obsidian.BasesView {
   getPropName(propId) {
     const parts = propId.split(".");
     return parts.length > 1 ? parts.slice(1).join(".") : propId;
+  }
+  renderFileContent(file, containerEl, renderIndex) {
+    const sidecarMatch = file.name.match(/^(.*\.(png|jpg|jpeg|gif|bmp|svg|webp|pdf))\.md$/i);
+    if (sidecarMatch) {
+      const originalPath = file.path.slice(0, -3);
+      const originalFile = this.app.vault.getAbstractFileByPath(originalPath);
+      if (originalFile instanceof import_obsidian.TFile) {
+        file = originalFile;
+      }
+    }
+    const ext = file.extension.toLowerCase();
+    const imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp"];
+    if (imageExtensions.includes(ext) || ext === "pdf") {
+      this.centerEl.addClass("spotlight-center-no-padding");
+    } else {
+      this.centerEl.removeClass("spotlight-center-no-padding");
+    }
+    if (imageExtensions.includes(ext)) {
+      containerEl.empty();
+      containerEl.addClass("spotlight-center-media-container");
+      const resourcePath = this.app.vault.getResourcePath(file);
+      containerEl.createEl("img", { attr: { src: resourcePath }, cls: "spotlight-media" });
+    } else if (ext === "pdf") {
+      containerEl.empty();
+      containerEl.addClass("spotlight-center-pdf-container");
+      const resourcePath = this.app.vault.getResourcePath(file);
+      containerEl.createEl("iframe", {
+        cls: "spotlight-pdf-iframe",
+        attr: {
+          src: resourcePath,
+          type: "application/pdf"
+        }
+      });
+    } else {
+      this.app.vault.cachedRead(file).then((content) => {
+        if (this.currentIndex !== renderIndex) return;
+        containerEl.empty();
+        containerEl.addClass("markdown-rendered", "markdown-preview-view");
+        import_obsidian.MarkdownRenderer.render(this.app, content, containerEl, file.path, this);
+      }).catch((err) => {
+        if (this.currentIndex !== renderIndex) return;
+        containerEl.empty();
+        containerEl.createEl("div", { text: `Could not load content for ${file.name}.` });
+      });
+    }
   }
 };
 var BasesSpotlightPlugin = class extends import_obsidian.Plugin {
