@@ -205,3 +205,30 @@
     padding: 4px;
     resize: vertical;
 }
+
+/* Property Drag and Drop Resizing */
+.spotlight-property-resizer {
+    height: 8px;
+    margin-top: -4px; /* pull up into padding */
+    margin-bottom: -4px; /* pull down into padding */
+    cursor: ns-resize;
+    position: relative;
+    z-index: 10;
+    transition: background-color 0.1s ease;
+}
+
+.spotlight-property-resizer:hover, .spotlight-property-resizer:active {
+    background-color: var(--background-modifier-hover);
+}
+
+.spotlight-property-dragging {
+    opacity: 0.5;
+}
+
+.spotlight-property-drag-over {
+    border-top: 2px solid var(--interactive-accent);
+}
+
+.spotlight-property-drag-below {
+    border-bottom: 2px solid var(--interactive-accent);
+}
