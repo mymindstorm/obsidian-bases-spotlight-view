@@ -140,6 +140,7 @@
     flex-direction: column;
     border-bottom: 1px solid var(--background-modifier-border);
     padding-bottom: 0.5rem;
+    position: relative;
 }
 
 .spotlight-property-name {
@@ -155,7 +156,8 @@
 }
 
 .spotlight-scrollable-text {
-    max-height: 150px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     word-break: break-word;
     white-space: pre-wrap;
@@ -191,6 +193,9 @@
 
 .spotlight-property-value-container {
     cursor: text;
+    display: flex;
+    flex-direction: column;
+    max-height: 150px;
 }
 
 .spotlight-property-edit-input {
@@ -208,17 +213,18 @@
 
 /* Property Drag and Drop Resizing */
 .spotlight-property-resizer {
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
     height: 8px;
-    margin-top: -4px; /* pull up into padding */
-    margin-bottom: -4px; /* pull down into padding */
     cursor: ns-resize;
-    position: relative;
     z-index: 10;
     transition: background-color 0.1s ease;
 }
 
 .spotlight-property-resizer:hover, .spotlight-property-resizer:active {
-    background-color: var(--background-modifier-hover);
+    background-color: var(--interactive-accent);
 }
 
 .spotlight-property-dragging {
