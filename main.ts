@@ -232,21 +232,23 @@ class SpotlightView extends BasesView {
             const propEl = this.sidebarEl.createDiv('spotlight-property');
             propEl.dataset.prop = prop;
             
-            // Reordering logic
-            propEl.draggable = true;
-            propEl.addEventListener('dragstart', (e) => {
-                if ((e.target as HTMLElement).classList.contains('spotlight-property-resizer')) {
-                    e.preventDefault();
-                    return;
-                }
+            const propNameEl = propEl.createDiv({ text: this.getPropName(prop), cls: 'spotlight-property-name' });
+            
+            // Reordering logic: only the name is draggable
+            propNameEl.draggable = true;
+            propNameEl.style.cursor = 'grab'; // show grab cursor on the name
+            
+            propNameEl.addEventListener('dragstart', (e) => {
                 e.dataTransfer?.setData('text/plain', prop);
                 propEl.classList.add('spotlight-property-dragging');
             });
-            propEl.addEventListener('dragend', () => {
+            propNameEl.addEventListener('dragend', () => {
                 propEl.classList.remove('spotlight-property-dragging');
                 this.sidebarEl.querySelectorAll('.spotlight-property-drag-over').forEach(el => el.classList.remove('spotlight-property-drag-over'));
                 this.sidebarEl.querySelectorAll('.spotlight-property-drag-below').forEach(el => el.classList.remove('spotlight-property-drag-below'));
             });
+
+            // Drop targets remain the entire property block
             propEl.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 const rect = propEl.getBoundingClientRect();
@@ -288,7 +290,6 @@ class SpotlightView extends BasesView {
                 this.render();
             });
 
-            propEl.createDiv({ text: this.getPropName(prop), cls: 'spotlight-property-name' });
             
             const valContainerEl = propEl.createDiv({ cls: 'spotlight-property-value-container' });
             

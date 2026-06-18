@@ -195,17 +195,15 @@ var SpotlightView = class extends import_obsidian.BasesView {
       }
       const propEl = this.sidebarEl.createDiv("spotlight-property");
       propEl.dataset.prop = prop;
-      propEl.draggable = true;
-      propEl.addEventListener("dragstart", (e) => {
+      const propNameEl = propEl.createDiv({ text: this.getPropName(prop), cls: "spotlight-property-name" });
+      propNameEl.draggable = true;
+      propNameEl.style.cursor = "grab";
+      propNameEl.addEventListener("dragstart", (e) => {
         var _a;
-        if (e.target.classList.contains("spotlight-property-resizer")) {
-          e.preventDefault();
-          return;
-        }
         (_a = e.dataTransfer) == null ? void 0 : _a.setData("text/plain", prop);
         propEl.classList.add("spotlight-property-dragging");
       });
-      propEl.addEventListener("dragend", () => {
+      propNameEl.addEventListener("dragend", () => {
         propEl.classList.remove("spotlight-property-dragging");
         this.sidebarEl.querySelectorAll(".spotlight-property-drag-over").forEach((el) => el.classList.remove("spotlight-property-drag-over"));
         this.sidebarEl.querySelectorAll(".spotlight-property-drag-below").forEach((el) => el.classList.remove("spotlight-property-drag-below"));
@@ -246,7 +244,6 @@ var SpotlightView = class extends import_obsidian.BasesView {
         await this.plugin.saveSettings();
         this.render();
       });
-      propEl.createDiv({ text: this.getPropName(prop), cls: "spotlight-property-name" });
       const valContainerEl = propEl.createDiv({ cls: "spotlight-property-value-container" });
       if (this.plugin.settings.propertyHeights[prop]) {
         valContainerEl.style.height = `${this.plugin.settings.propertyHeights[prop]}px`;
