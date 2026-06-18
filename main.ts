@@ -39,6 +39,21 @@ class SpotlightView extends BasesView {
         // Setup base DOM
         this.containerEl.addClass('spotlight-bases-view');
         this.containerEl.tabIndex = 0; // Make focusable for keyboard events
+        
+        // Add active class to .view-content to override default padding
+        const viewContent = this.containerEl.closest('.view-content');
+        if (viewContent) {
+            viewContent.addClass('spotlight-view-content-active');
+            
+            // Cleanup when view is removed
+            const observer = new MutationObserver(() => {
+                if (!activeDocument.body.contains(this.containerEl)) {
+                    viewContent.removeClass('spotlight-view-content-active');
+                    observer.disconnect();
+                }
+            });
+            observer.observe(activeDocument.body, { childList: true, subtree: true });
+        }
 
         // Layout: Center, Resizer, Sidebar
         this.centerEl = this.containerEl.createDiv('spotlight-center');
