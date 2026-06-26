@@ -34,6 +34,7 @@ class SpotlightView extends BasesView {
     private sidebarEl: HTMLElement;
     private isResizing = false;
     private containerEl: HTMLElement;
+    private currentPdfBlobUrl: string | null = null;
     public plugin: BasesSpotlightPlugin;
 
     constructor(controller: QueryController, containerEl: HTMLElement, plugin: BasesSpotlightPlugin) {
@@ -404,8 +405,20 @@ class SpotlightView extends BasesView {
                 valEl.setCssStyles({ color: 'var(--text-faint)' });
             }
 
-            // Editable logic
-            if (prop.startsWith('note.') && entry.file instanceof TFile) {
+            const hyperlinkProperty = this.config.get('hyperlink_property') as string | undefined;
+
+            // Editable or Link logic
+            if (hyperlinkProperty && prop === hyperlinkProperty) {
+                propEl.title = "Click to open file (Ctrl/Cmd+Click for new pane)";
+                valEl.addClass('spotlight-hyperlink-value');
+                propEl.addEventListener('click', (e) => {
+                    if (this.isResizing || (e.target as HTMLElement).closest('.spotlight-property-resizer')) return;
+                    if (entry.file instanceof TFile) {
+                        const newLeaf = (e as MouseEvent).ctrlKey || (e as MouseEvent).metaKey || (e as MouseEvent).button === 1;
+                        this.app.workspace.getLeaf(newLeaf).openFile(entry.file);
+                    }
+                });
+            } else if (prop.startsWith('note.') && entry.file instanceof TFile) {
                 propEl.title = "Click to edit";
                 propEl.setCssStyles({ cursor: "pointer" });
                 propEl.addEventListener('click', (e) => {
@@ -561,6 +574,11 @@ class SpotlightView extends BasesView {
     }
 
     private renderFileContent(file: TFile, containerEl: HTMLElement, renderIndex: number) {
+        if (this.currentPdfBlobUrl) {
+            URL.revokeObjectURL(this.currentPdfBlobUrl);
+            this.currentPdfBlobUrl = null;
+        }
+
         // If it's a sidecar (e.g. image.png.md), display the original file instead
         const sidecarMatch = file.name.match(/^(.*\.(png|jpg|jpeg|gif|bmp|svg|webp|pdf))\.md$/i);
         if (sidecarMatch) {
@@ -588,13 +606,21 @@ class SpotlightView extends BasesView {
         } else if (ext === 'pdf') {
             containerEl.empty();
             containerEl.addClass('spotlight-center-pdf-container');
-            const resourcePath = this.app.vault.getResourcePath(file);
-            containerEl.createEl('iframe', {
-                cls: 'spotlight-pdf-iframe',
-                attr: {
-                    src: resourcePath,
-                    type: 'application/pdf',
-                }
+            this.app.vault.readBinary(file).then(buffer => {
+                if (this.currentIndex !== renderIndex) return;
+                const blob = new Blob([buffer], { type: 'application/pdf' });
+                this.currentPdfBlobUrl = URL.createObjectURL(blob);
+                containerEl.createEl('iframe', {
+                    cls: 'spotlight-pdf-iframe',
+                    attr: {
+                        src: this.currentPdfBlobUrl,
+                        type: 'application/pdf'
+                    }
+                });
+            }).catch((_err: unknown) => {
+                if (this.currentIndex !== renderIndex) return;
+                containerEl.empty();
+                containerEl.createEl('div', { text: `Could not load PDF content for ${file.name}.` });
             });
         } else {
             this.app.vault.cachedRead(file).then(content => {
@@ -631,6 +657,13 @@ export default class BasesSpotlightPlugin extends Plugin {
                     displayName: 'Spotlight Content Property',
                     // @ts-ignore
                     description: 'Select an attribute to display in the center instead of the page content'
+                } as BasesPropertyOption,
+                {
+                    type: 'property',
+                    key: 'hyperlink_property',
+                    displayName: 'Hyperlink Property',
+                    // @ts-ignore
+                    description: 'Select an attribute to display as a clickable link that opens the file'
                 } as BasesPropertyOption
             ]
         });
