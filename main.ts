@@ -635,7 +635,9 @@ class SpotlightView extends BasesView {
                 modifiedContent = modifiedContent.replace(/!\[\[(.*?)\]\]/g, (match, p1) => {
                     const cleanSrc = p1.split('|')[0].split('#')[0];
                     if (cleanSrc.toLowerCase().endsWith('.pdf')) {
-                        return `<div class="spotlight-pdf-placeholder" data-src="${p1}"></div>`;
+                        const heightMatch = p1.match(/height=(\d+)/);
+                        const height = heightMatch ? heightMatch[1] : '800';
+                        return `<div class="spotlight-pdf-placeholder" data-src="${p1}" style="height: ${height}px; width: 100%;"></div>`;
                     }
                     return match;
                 });
@@ -643,7 +645,9 @@ class SpotlightView extends BasesView {
                 modifiedContent = modifiedContent.replace(/!\[(.*?)\]\((.*?)\)/g, (match, p1, p2) => {
                     const cleanSrc = p2.split('|')[0].split('#')[0];
                     if (cleanSrc.toLowerCase().endsWith('.pdf')) {
-                        return `<div class="spotlight-pdf-placeholder" data-src="${p2}"></div>`;
+                        const heightMatch = p2.match(/height=(\d+)/);
+                        const height = heightMatch ? heightMatch[1] : '800';
+                        return `<div class="spotlight-pdf-placeholder" data-src="${p2}" style="height: ${height}px; width: 100%;"></div>`;
                     }
                     return match;
                 });

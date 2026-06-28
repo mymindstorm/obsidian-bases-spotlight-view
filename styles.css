@@ -131,6 +131,13 @@
     flex: 1;
 }
 
+.spotlight-pdf-placeholder iframe.spotlight-pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
 .spotlight-attribute-content {
     font-size: 2em;
     font-weight: bold;
