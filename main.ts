@@ -624,21 +624,47 @@ class SpotlightView extends BasesView {
         } else {
             this.app.vault.cachedRead(file).then(content => {
                 if (this.currentIndex !== renderIndex) return;
+
+                // Pre-process content to avoid loading native Obsidian PDF embeds
+                const codeBlocks: string[] = [];
+                let modifiedContent = content.replace(/(```[\s\S]*?```|`[^`]*`)/g, (match) => {
+                    codeBlocks.push(match);
+                    return `__SPOTLIGHT_CODE_BLOCK_${codeBlocks.length - 1}__`;
+                });
+
+                modifiedContent = modifiedContent.replace(/!\[\[(.*?)\]\]/g, (match, p1) => {
+                    const cleanSrc = p1.split('|')[0].split('#')[0];
+                    if (cleanSrc.toLowerCase().endsWith('.pdf')) {
+                        return `<div class="spotlight-pdf-placeholder" data-src="${p1}"></div>`;
+                    }
+                    return match;
+                });
+
+                modifiedContent = modifiedContent.replace(/!\[(.*?)\]\((.*?)\)/g, (match, p1, p2) => {
+                    const cleanSrc = p2.split('|')[0].split('#')[0];
+                    if (cleanSrc.toLowerCase().endsWith('.pdf')) {
+                        return `<div class="spotlight-pdf-placeholder" data-src="${p2}"></div>`;
+                    }
+                    return match;
+                });
+
+                modifiedContent = modifiedContent.replace(/__SPOTLIGHT_CODE_BLOCK_(\d+)__/g, (match, p1) => {
+                    return codeBlocks[parseInt(p1, 10)];
+                });
+
                 containerEl.empty();
                 containerEl.addClass('markdown-rendered', 'markdown-preview-view');
-                MarkdownRenderer.render(this.app, content, containerEl, file.path, this).then(() => {
+                MarkdownRenderer.render(this.app, modifiedContent, containerEl, file.path, this).then(() => {
                     if (this.currentIndex !== renderIndex) return;
                     
-                    const embeds = containerEl.querySelectorAll('.internal-embed');
-                    embeds.forEach(embed => {
-                        const src = embed.getAttribute('src');
+                    const placeholders = containerEl.querySelectorAll('.spotlight-pdf-placeholder');
+                    placeholders.forEach(placeholder => {
+                        const src = placeholder.getAttribute('data-src');
                         if (!src) return;
                         
-                        const cleanSrc = src.split('#')[0];
-                        if (!cleanSrc.toLowerCase().endsWith('.pdf')) return;
-                        
+                        const cleanSrc = src.split('|')[0].split('#')[0];
                         const destFile = this.app.metadataCache.getFirstLinkpathDest(cleanSrc, file.path);
-                        if (destFile instanceof TFile) {
+                        if (destFile instanceof TFile && destFile.extension.toLowerCase() === 'pdf') {
                             this.app.vault.readBinary(destFile).then(buffer => {
                                 if (this.currentIndex !== renderIndex) return;
                                 
@@ -646,8 +672,8 @@ class SpotlightView extends BasesView {
                                 const url = URL.createObjectURL(blob);
                                 this.activePdfBlobUrls.push(url);
                                 
-                                embed.empty();
-                                embed.createEl('iframe', {
+                                placeholder.empty();
+                                placeholder.createEl('iframe', {
                                     cls: 'spotlight-pdf-iframe',
                                     attr: {
                                         src: url,
