@@ -34,7 +34,7 @@ class SpotlightView extends BasesView {
     private sidebarEl: HTMLElement;
     private isResizing = false;
     private containerEl: HTMLElement;
-    private currentPdfBlobUrl: string | null = null;
+    private activePdfBlobUrls: string[] = [];
     public plugin: BasesSpotlightPlugin;
 
     constructor(controller: QueryController, containerEl: HTMLElement, plugin: BasesSpotlightPlugin) {
@@ -574,10 +574,8 @@ class SpotlightView extends BasesView {
     }
 
     private renderFileContent(file: TFile, containerEl: HTMLElement, renderIndex: number) {
-        if (this.currentPdfBlobUrl) {
-            URL.revokeObjectURL(this.currentPdfBlobUrl);
-            this.currentPdfBlobUrl = null;
-        }
+        this.activePdfBlobUrls.forEach(url => URL.revokeObjectURL(url));
+        this.activePdfBlobUrls = [];
 
         // If it's a sidecar (e.g. image.png.md), display the original file instead
         const sidecarMatch = file.name.match(/^(.*\.(png|jpg|jpeg|gif|bmp|svg|webp|pdf))\.md$/i);
@@ -609,11 +607,12 @@ class SpotlightView extends BasesView {
             this.app.vault.readBinary(file).then(buffer => {
                 if (this.currentIndex !== renderIndex) return;
                 const blob = new Blob([buffer], { type: 'application/pdf' });
-                this.currentPdfBlobUrl = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(blob);
+                this.activePdfBlobUrls.push(url);
                 containerEl.createEl('iframe', {
                     cls: 'spotlight-pdf-iframe',
                     attr: {
-                        src: this.currentPdfBlobUrl,
+                        src: url,
                         type: 'application/pdf'
                     }
                 });
@@ -627,7 +626,38 @@ class SpotlightView extends BasesView {
                 if (this.currentIndex !== renderIndex) return;
                 containerEl.empty();
                 containerEl.addClass('markdown-rendered', 'markdown-preview-view');
-                MarkdownRenderer.render(this.app, content, containerEl, file.path, this);
+                MarkdownRenderer.render(this.app, content, containerEl, file.path, this).then(() => {
+                    if (this.currentIndex !== renderIndex) return;
+                    
+                    const embeds = containerEl.querySelectorAll('.internal-embed');
+                    embeds.forEach(embed => {
+                        const src = embed.getAttribute('src');
+                        if (!src) return;
+                        
+                        const cleanSrc = src.split('#')[0];
+                        if (!cleanSrc.toLowerCase().endsWith('.pdf')) return;
+                        
+                        const destFile = this.app.metadataCache.getFirstLinkpathDest(cleanSrc, file.path);
+                        if (destFile instanceof TFile) {
+                            this.app.vault.readBinary(destFile).then(buffer => {
+                                if (this.currentIndex !== renderIndex) return;
+                                
+                                const blob = new Blob([buffer], { type: 'application/pdf' });
+                                const url = URL.createObjectURL(blob);
+                                this.activePdfBlobUrls.push(url);
+                                
+                                embed.empty();
+                                embed.createEl('iframe', {
+                                    cls: 'spotlight-pdf-iframe',
+                                    attr: {
+                                        src: url,
+                                        type: 'application/pdf'
+                                    }
+                                });
+                            });
+                        }
+                    });
+                });
             }).catch((_err: unknown) => {
                 if (this.currentIndex !== renderIndex) return;
                 containerEl.empty();
