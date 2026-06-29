@@ -44,7 +44,6 @@ class SpotlightView extends BasesView {
         this.containerEl = containerEl;
         
         // Setup base DOM
-        this.containerEl.addClass('spotlight-bases-view');
         this.containerEl.tabIndex = 0; // Make focusable for keyboard events
 
         this.wrapperEl = this.containerEl.createDiv('spotlight-bases-wrapper');

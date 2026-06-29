@@ -10,14 +10,14 @@
  * The fix: make our .bases-view fill remaining space with flex:1
  */
 
-/* Make our view fill all remaining space after the Bases toolbar */
-.workspace-leaf-content .view-content .bases-view.spotlight-bases-view {
+/* Dynamically override padding/overflow only when our wrapper is actively inside it */
+.bases-view:has(> .spotlight-bases-wrapper) {
     flex: 1;
     min-height: 0;
     width: 100%;
-    overflow: hidden;
+    overflow: hidden !important;
     outline: none;
-    padding: 0;
+    padding: 0 !important;
 }
 
 .spotlight-bases-wrapper {
