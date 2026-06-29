@@ -7,14 +7,8 @@
  *   └── .bases-view.spotlight-bases-view  ← OUR VIEW — needs flex:1
  *
  * .view-content is already display:flex from Obsidian.
- * The fix: make our .bases-view fill remaining space with flex:1,
- * and remove any padding on .view-content.
+ * The fix: make our .bases-view fill remaining space with flex:1
  */
-
-/* Remove default padding from .view-content when our spotlight is present via JS class */
-.workspace-leaf-content .view-content.spotlight-view-content-active {
-    padding: 0;
-}
 
 /* Make our view fill all remaining space after the Bases toolbar */
 .workspace-leaf-content .view-content .bases-view.spotlight-bases-view {
