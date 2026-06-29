@@ -35,6 +35,7 @@ class SpotlightView extends BasesView {
     private isResizing = false;
     private containerEl: HTMLElement;
     private activePdfBlobUrls: string[] = [];
+    private wrapperEl: HTMLElement;
     public plugin: BasesSpotlightPlugin;
 
     constructor(controller: QueryController, containerEl: HTMLElement, plugin: BasesSpotlightPlugin) {
@@ -46,13 +47,15 @@ class SpotlightView extends BasesView {
         this.containerEl.addClass('spotlight-bases-view');
         this.containerEl.tabIndex = 0; // Make focusable for keyboard events
 
+        this.wrapperEl = this.containerEl.createDiv('spotlight-bases-wrapper');
+
         // Layout: Center, Resizer, Sidebar
-        this.centerEl = this.containerEl.createDiv('spotlight-center');
+        this.centerEl = this.wrapperEl.createDiv('spotlight-center');
         
-        const resizerEl = this.containerEl.createDiv('spotlight-resizer');
+        const resizerEl = this.wrapperEl.createDiv('spotlight-resizer');
         resizerEl.addEventListener('mousedown', (e) => this.initResize(e));
 
-        this.sidebarEl = this.containerEl.createDiv('spotlight-sidebar');
+        this.sidebarEl = this.wrapperEl.createDiv('spotlight-sidebar');
 
         // Keyboard navigation
         this.containerEl.addEventListener('keydown', (e) => this.handleKeyDown(e));
